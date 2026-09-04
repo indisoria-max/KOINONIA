@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Generador Iconos Koinonia</title>
+  <style>
+    body { background: #0C1828; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; gap: 24px; }
+    h2 { color: #C9A227; }
+    canvas { border-radius: 20px; }
+    button { background: #C9A227; color: #0C1828; border: none; padding: 12px 24px; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: 15px; margin-top: 10px; }
+    p { color: rgba(245,240,232,0.5); font-size: 13px; text-align: center; }
+  </style>
+</head>
+<body>
+  <h2>Iconos Koinonia</h2>
+  <canvas id="c192" width="192" height="192"></canvas>
+  <button onclick="download('c192','icon-192.png')">Descargar icon-192.png</button>
+  <canvas id="c512" width="512" height="512" style="width:192px;height:192px"></canvas>
+  <button onclick="download('c512','icon-512.png')">Descargar icon-512.png</button>
+  <p>Guarda los dos archivos en la carpeta <strong style="color:#C9A227">public/</strong></p>
+
+  <script>
+    function drawIcon(id, size) {
+      const canvas = document.getElementById(id)
+      const ctx = canvas.getContext('2d')
+      const r = size * 0.2
+
+      ctx.fillStyle = '#0C1828'
+      ctx.beginPath()
+      ctx.moveTo(r, 0)
+      ctx.lineTo(size - r, 0)
+      ctx.quadraticCurveTo(size, 0, size, r)
+      ctx.lineTo(size, size - r)
+      ctx.quadraticCurveTo(size, size, size - r, size)
+      ctx.lineTo(r, size)
+      ctx.quadraticCurveTo(0, size, 0, size - r)
+      ctx.lineTo(0, r)
+      ctx.quadraticCurveTo(0, 0, r, 0)
+      ctx.closePath()
+      ctx.fill()
+
+      ctx.shadowColor = 'rgba(201,162,39,0.7)'
+      ctx.shadowBlur = size * 0.08
+      ctx.fillStyle = '#C9A227'
+
+      const vw = size * 0.1, vh = size * 0.52
+      ctx.fillRect((size - vw) / 2, (size - vh) / 2, vw, vh)
+
+      const hw = size * 0.42, hh = size * 0.1
+      ctx.fillRect((size - hw) / 2, size * 0.28, hw, hh)
+    }
+
+    function download(id, filename) {
+      const link = document.createElement('a')
+      link.download = filename
+      link.href = document.getElementById(id).toDataURL('image/png')
+      link.click()
+    }
+
+    drawIcon('c192', 192)
+    drawIcon('c512', 512)
+  </script>
+</body>
+</html>

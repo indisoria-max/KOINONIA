@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { Plus, X, Phone, Globe, MapPin } from 'lucide-react'
+import { Plus, X, Phone, Globe, MapPin, Bed, UtensilsCrossed, ShoppingBag, GraduationCap, HeartPulse, Plane, Palette, Wrench, LayoutGrid, Award, CreditCard, CheckCircle } from 'lucide-react'
 
 type Partner = {
   id: string
@@ -19,15 +19,15 @@ type Partner = {
 }
 
 const CATEGORIES = [
-  { key: 'all',          label: 'Todos',        emoji: '✨' },
-  { key: 'alojamiento',  label: 'Alojamiento',  emoji: '🏨' },
-  { key: 'restauracion', label: 'Restauración', emoji: '🍽️' },
-  { key: 'comercio',     label: 'Comercio',     emoji: '🛍️' },
-  { key: 'formacion',    label: 'Formación',    emoji: '📚' },
-  { key: 'salud',        label: 'Salud',        emoji: '🏥' },
-  { key: 'viajes',       label: 'Viajes',       emoji: '✈️' },
-  { key: 'arte',         label: 'Arte',         emoji: '🎨' },
-  { key: 'servicios',    label: 'Servicios',    emoji: '🔧' },
+  { key: 'all',          label: 'Todos',        Icon: LayoutGrid     },
+  { key: 'alojamiento',  label: 'Alojamiento',  Icon: Bed            },
+  { key: 'restauracion', label: 'Restauración', Icon: UtensilsCrossed },
+  { key: 'comercio',     label: 'Comercio',     Icon: ShoppingBag    },
+  { key: 'formacion',    label: 'Formación',    Icon: GraduationCap  },
+  { key: 'salud',        label: 'Salud',        Icon: HeartPulse     },
+  { key: 'viajes',       label: 'Viajes',       Icon: Plane          },
+  { key: 'arte',         label: 'Arte',         Icon: Palette        },
+  { key: 'servicios',    label: 'Servicios',    Icon: Wrench         },
 ]
 
 const inputStyle: React.CSSProperties = {
@@ -87,28 +87,17 @@ export default function PartnersPage() {
     const { data: partner, error } = await supabase
       .from('partners')
       .insert({
-        user_id: userId,
-        business_name: bName.trim(),
-        category: bCat,
-        city: bCity.trim() || null,
+        user_id: userId, business_name: bName.trim(),
+        category: bCat, city: bCity.trim() || null,
         description: bDesc.trim() || null,
         phone: bPhone.trim() || null,
         website: bWeb.trim() || null,
         status: 'pending',
       })
-      .select()
-      .single()
+      .select().single()
 
-    if (error) {
-      alert('❌ Error Supabase: ' + error.message)
-      setSubmitting(false)
-      return
-    }
-    if (!partner) {
-      alert('❌ No se creó el partner')
-      setSubmitting(false)
-      return
-    }
+    if (error) { alert('Error Supabase: ' + error.message); setSubmitting(false); return }
+    if (!partner) { setSubmitting(false); return }
 
     const res = await fetch('/api/checkout', {
       method: 'POST',
@@ -116,25 +105,11 @@ export default function PartnersPage() {
       body: JSON.stringify({ partner_id: partner.id, business_name: partner.business_name }),
     })
 
-    if (!res.ok) {
-      const txt = await res.text()
-      alert('❌ Error checkout: ' + txt)
-      setSubmitting(false)
-      return
-    }
+    if (!res.ok) { const txt = await res.text(); alert('Error checkout: ' + txt); setSubmitting(false); return }
 
     const { url, error: stripeError } = await res.json()
-
-    if (stripeError) {
-      alert('❌ Error Stripe: ' + stripeError)
-      setSubmitting(false)
-      return
-    }
-    if (!url) {
-      alert('❌ No hay URL de pago')
-      setSubmitting(false)
-      return
-    }
+    if (stripeError) { alert('Error Stripe: ' + stripeError); setSubmitting(false); return }
+    if (!url) { alert('No hay URL de pago'); setSubmitting(false); return }
 
     window.location.href = url
   }
@@ -163,14 +138,15 @@ export default function PartnersPage() {
 
         {/* Filtros */}
         <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', marginBottom: '16px', scrollbarWidth: 'none' }}>
-          {CATEGORIES.map(cat => (
-            <button key={cat.key} onClick={() => setFilter(cat.key)} style={{
-              flexShrink: 0, padding: '7px 14px', borderRadius: '9999px', cursor: 'pointer', fontSize: '12px', fontWeight: '500',
-              border: filter === cat.key ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(245,240,232,0.1)',
-              background: filter === cat.key ? 'rgba(201,162,39,0.15)' : 'rgba(26,46,66,0.5)',
-              color: filter === cat.key ? 'var(--gold-light)' : 'var(--muted)',
+          {CATEGORIES.map(({ key, label, Icon }) => (
+            <button key={key} onClick={() => setFilter(key)} style={{
+              flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px',
+              padding: '7px 14px', borderRadius: '9999px', cursor: 'pointer', fontSize: '12px', fontWeight: '500',
+              border: filter === key ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(245,240,232,0.1)',
+              background: filter === key ? 'rgba(201,162,39,0.15)' : 'rgba(26,46,66,0.5)',
+              color: filter === key ? 'var(--gold-light)' : 'var(--muted)',
             }}>
-              {cat.emoji} {cat.label}
+              <Icon size={13} /> {label}
             </button>
           ))}
         </div>
@@ -195,12 +171,15 @@ export default function PartnersPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filtered.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
+              <Award size={36} color="rgba(201,162,39,0.3)" style={{ marginBottom: '16px' }} />
               <p style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: 'var(--text)', marginBottom: '8px' }}>Aún no hay negocios aquí</p>
-              <p style={{ fontSize: '14px', color: 'var(--muted)', margin: 0 }}>¡Sé el primero en anunciarte! ✝️</p>
+              <p style={{ fontSize: '14px', color: 'var(--muted)', margin: 0 }}>Sé el primero en anunciarte</p>
             </div>
           )}
+
           {filtered.map(partner => {
             const cat     = catMap[partner.category] || catMap['servicios']
+            const CatIcon = cat.Icon
             const inicial = partner.business_name[0]?.toUpperCase() || '?'
             return (
               <div key={partner.id} style={{ background: 'linear-gradient(135deg, rgba(26,46,66,0.75), rgba(20,34,51,0.7))', borderRadius: '20px', padding: '18px', border: '1px solid rgba(201,162,39,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.25)', backdropFilter: 'blur(8px)' }}>
@@ -211,8 +190,8 @@ export default function PartnersPage() {
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
                       <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '16px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>{partner.business_name}</h3>
-                      <span style={{ background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)', color: 'var(--gold-light)', fontSize: '10px', fontWeight: '500', padding: '2px 8px', borderRadius: '9999px' }}>
-                        {cat.emoji} {cat.label}
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)', color: 'var(--gold-light)', fontSize: '10px', fontWeight: '500', padding: '2px 8px', borderRadius: '9999px' }}>
+                        <CatIcon size={10} /> {cat.label}
                       </span>
                     </div>
                     {partner.city && (
@@ -223,12 +202,15 @@ export default function PartnersPage() {
                     )}
                   </div>
                 </div>
-                <span style={{ display: 'inline-block', fontSize: '11px', color: 'rgba(201,162,39,0.7)', background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.18)', padding: '2px 10px', borderRadius: '9999px', marginBottom: '10px' }}>
-                  ✝️ Valores católicos certificados
+
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', color: 'rgba(201,162,39,0.7)', background: 'rgba(201,162,39,0.08)', border: '1px solid rgba(201,162,39,0.18)', padding: '2px 10px', borderRadius: '9999px', marginBottom: '10px' }}>
+                  <CheckCircle size={11} /> Valores católicos certificados
                 </span>
+
                 {partner.description && (
                   <p style={{ fontSize: '14px', lineHeight: 1.65, color: 'var(--muted)', margin: '0 0 12px' }}>{partner.description}</p>
                 )}
+
                 {(partner.phone || partner.website) && (
                   <div style={{ display: 'flex', gap: '14px' }}>
                     {partner.phone && (
@@ -249,7 +231,7 @@ export default function PartnersPage() {
         </div>
       </div>
 
-      {/* Modal */}
+      {/* Modal registro */}
       {showNew && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(8,14,24,0.88)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'flex-end' }}>
           <div style={{ width: '100%', maxHeight: '90vh', overflowY: 'auto', background: 'linear-gradient(180deg, rgba(20,34,51,0.99), rgba(12,22,38,1))', borderRadius: '24px 24px 0 0', borderTop: '1px solid rgba(201,162,39,0.2)', padding: '20px 20px 44px' }}>
@@ -269,9 +251,9 @@ export default function PartnersPage() {
 
             <p style={{ fontSize: '11px', color: 'var(--gold)', fontWeight: '600', letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 6px' }}>Categoría *</p>
             <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
-              {CATEGORIES.filter(c => c.key !== 'all').map(cat => (
-                <button key={cat.key} onClick={() => setBCat(cat.key)} style={{ padding: '6px 12px', borderRadius: '9999px', cursor: 'pointer', fontSize: '12px', fontWeight: '500', border: bCat === cat.key ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(245,240,232,0.1)', background: bCat === cat.key ? 'rgba(201,162,39,0.15)' : 'transparent', color: bCat === cat.key ? 'var(--gold-light)' : 'var(--muted)' }}>
-                  {cat.emoji} {cat.label}
+              {CATEGORIES.filter(c => c.key !== 'all').map(({ key, label, Icon }) => (
+                <button key={key} onClick={() => setBCat(key)} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '9999px', cursor: 'pointer', fontSize: '12px', fontWeight: '500', border: bCat === key ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(245,240,232,0.1)', background: bCat === key ? 'rgba(201,162,39,0.15)' : 'transparent', color: bCat === key ? 'var(--gold-light)' : 'var(--muted)' }}>
+                  <Icon size={12} /> {label}
                 </button>
               ))}
             </div>
@@ -288,6 +270,7 @@ export default function PartnersPage() {
             <p style={{ fontSize: '11px', color: 'var(--gold)', fontWeight: '600', letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 6px' }}>Web</p>
             <input value={bWeb} onChange={e => setBWeb(e.target.value)} placeholder="https://..." style={inputStyle} />
 
+            {/* Certificación */}
             <div onClick={() => setCertified(!certified)} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', padding: '14px', borderRadius: '14px', border: `1px solid ${certified ? 'rgba(201,162,39,0.4)' : 'rgba(245,240,232,0.1)'}`, background: certified ? 'rgba(201,162,39,0.08)' : 'rgba(26,46,66,0.4)', cursor: 'pointer', marginBottom: '16px' }}>
               <div style={{ width: '20px', height: '20px', borderRadius: '6px', border: `2px solid ${certified ? 'var(--gold)' : 'rgba(245,240,232,0.2)'}`, background: certified ? 'var(--gold)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px' }}>
                 {certified && <span style={{ color: '#0C1828', fontSize: '12px', fontWeight: '900' }}>✓</span>}
@@ -297,6 +280,7 @@ export default function PartnersPage() {
               </p>
             </div>
 
+            {/* Precio */}
             <div style={{ background: 'rgba(201,162,39,0.06)', border: '1px solid rgba(201,162,39,0.18)', borderRadius: '14px', padding: '14px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <p style={{ margin: 0, fontSize: '13px', color: 'var(--text)', fontWeight: '600' }}>Listing anual</p>
@@ -305,14 +289,16 @@ export default function PartnersPage() {
               <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '22px', fontWeight: '700', color: 'var(--gold)' }}>29€</span>
             </div>
 
-            <button onClick={handleSubmit} disabled={submitting} style={{
-              width: '100%', padding: '15px', borderRadius: '14px',
-              background: 'linear-gradient(135deg, rgba(201,162,39,0.28), rgba(201,162,39,0.16))',
-              border: '1px solid rgba(201,162,39,0.4)',
-              color: 'var(--gold-light)', fontWeight: '600', fontSize: '15px',
-              cursor: 'pointer',
+            <button onClick={handleSubmit} disabled={!bName.trim() || !certified || submitting} style={{
+              width: '100%', padding: '15px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              background: bName.trim() && certified ? 'linear-gradient(135deg, rgba(201,162,39,0.28), rgba(201,162,39,0.16))' : 'rgba(245,240,232,0.05)',
+              border: bName.trim() && certified ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(245,240,232,0.08)',
+              color: bName.trim() && certified ? 'var(--gold-light)' : 'var(--muted)',
+              fontWeight: '600', fontSize: '15px',
+              cursor: bName.trim() && certified ? 'pointer' : 'default',
             }}>
-              {submitting ? 'Procesando...' : '💳 Pagar y publicar — 29€'}
+              <CreditCard size={16} />
+              {submitting ? 'Procesando...' : 'Pagar y publicar — 29€'}
             </button>
           </div>
         </div>

@@ -2,9 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Stripe from 'stripe'
 import Link from 'next/link'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-05-28.basil',
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export default async function SuccessPage({
   searchParams,

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { Heart, Plus, X, ImageIcon, Video, Music } from 'lucide-react'
+import { Heart, Plus, X, ImageIcon, Video, Music, BookOpen, Star, Sparkles } from 'lucide-react'
 
 type Post = {
   id: string
@@ -17,9 +17,9 @@ type Post = {
 }
 
 const TYPE_CONFIG = {
-  reflexion:  { label: 'Reflexión',  emoji: '🌿' },
-  oracion:    { label: 'Oración',    emoji: '🙏' },
-  testimonio: { label: 'Testimonio', emoji: '✨' },
+  reflexion:  { label: 'Reflexión',  Icon: BookOpen  },
+  oracion:    { label: 'Oración',    Icon: Heart     },
+  testimonio: { label: 'Testimonio', Icon: Sparkles  },
 }
 
 function timeAgo(date: string): string {
@@ -150,31 +150,39 @@ export default function ComunidadPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {posts.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <p style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: 'var(--text)', marginBottom: '8px' }}>Sé el primero en compartir</p>
-              <p style={{ fontSize: '14px', color: 'var(--muted)', margin: 0 }}>La comunidad te está esperando 🙏</p>
+              <Heart size={32} color="rgba(201,162,39,0.3)" style={{ marginBottom: '16px' }} />
+              <p style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: 'var(--text)', marginBottom: '8px' }}>
+                Sé el primero en compartir
+              </p>
+              <p style={{ fontSize: '14px', color: 'var(--muted)', margin: 0 }}>
+                La comunidad te está esperando
+              </p>
             </div>
           )}
 
           {posts.map(post => {
             const liked   = post.post_likes.some(l => l.user_id === userId)
             const cfg     = TYPE_CONFIG[post.type]
+            const TypeIcon = cfg.Icon
             const name    = `${post.profiles?.first_name || ''} ${post.profiles?.last_name || ''}`.trim() || 'Usuario'
             const inicial = name[0]?.toUpperCase() || '?'
 
             return (
               <div key={post.id} style={{ background: 'linear-gradient(135deg, rgba(26,46,66,0.75), rgba(20,34,51,0.7))', borderRadius: '20px', padding: '16px', border: '1px solid rgba(201,162,39,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.25)', backdropFilter: 'blur(8px)' }}>
-                
+
                 {/* Cabecera */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                   <div style={{ width: '38px', height: '38px', borderRadius: '50%', border: '2px solid rgba(201,162,39,0.3)', overflow: 'hidden', background: 'linear-gradient(135deg, #1A2E44, #142233)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: 'var(--gold)', flexShrink: 0 }}>
-                    {post.profiles?.avatar_url ? <img src={post.profiles.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" /> : inicial}
+                    {post.profiles?.avatar_url
+                      ? <img src={post.profiles.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                      : inicial}
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>{name}</p>
                     <p style={{ margin: 0, fontSize: '11px', color: 'var(--muted)' }}>{timeAgo(post.created_at)}</p>
                   </div>
-                  <span style={{ background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)', color: 'var(--gold-light)', fontSize: '11px', fontWeight: '500', padding: '3px 10px', borderRadius: '9999px' }}>
-                    {cfg.emoji} {cfg.label}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)', color: 'var(--gold-light)', fontSize: '11px', fontWeight: '500', padding: '3px 10px', borderRadius: '9999px' }}>
+                    <TypeIcon size={11} /> {cfg.label}
                   </span>
                 </div>
 
@@ -223,11 +231,14 @@ export default function ComunidadPage() {
 
             {/* Tipo */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-              {(Object.entries(TYPE_CONFIG) as [Post['type'], typeof TYPE_CONFIG[Post['type']]][]).map(([key, cfg]) => (
-                <button key={key} onClick={() => setType(key)} style={{ flex: 1, padding: '8px 4px', borderRadius: '12px', cursor: 'pointer', border: type === key ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(245,240,232,0.1)', background: type === key ? 'rgba(201,162,39,0.15)' : 'transparent', color: type === key ? 'var(--gold-light)' : 'var(--muted)', fontSize: '12px', fontWeight: '500' }}>
-                  {cfg.emoji} {cfg.label}
-                </button>
-              ))}
+              {(Object.entries(TYPE_CONFIG) as [Post['type'], typeof TYPE_CONFIG[Post['type']]][]).map(([key, cfg]) => {
+                const TIcon = cfg.Icon
+                return (
+                  <button key={key} onClick={() => setType(key)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '8px 4px', borderRadius: '12px', cursor: 'pointer', border: type === key ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(245,240,232,0.1)', background: type === key ? 'rgba(201,162,39,0.15)' : 'transparent', color: type === key ? 'var(--gold-light)' : 'var(--muted)', fontSize: '12px', fontWeight: '500' }}>
+                    <TIcon size={13} /> {cfg.label}
+                  </button>
+                )
+              })}
             </div>
 
             {/* Textarea */}
@@ -249,28 +260,22 @@ export default function ComunidadPage() {
 
             {/* Botones media + publicar */}
             <div style={{ display: 'flex', gap: '8px' }}>
-              {/* Foto */}
               <label style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
                 <input ref={imgRef} type="file" accept="image/*" onChange={e => handleFileSelect(e, 'image')} style={{ display: 'none' }} />
                 <ImageIcon size={18} color="var(--gold)" />
               </label>
-              {/* Video */}
               <label style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
                 <input ref={vidRef} type="file" accept="video/*" onChange={e => handleFileSelect(e, 'video')} style={{ display: 'none' }} />
                 <Video size={18} color="var(--gold)" />
               </label>
-              {/* Audio */}
               <label style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
                 <input ref={audioRef} type="file" accept="audio/*" onChange={e => handleFileSelect(e, 'audio')} style={{ display: 'none' }} />
                 <Music size={18} color="var(--gold)" />
               </label>
-              {/* Publicar */}
               <button onClick={handlePost} disabled={!content.trim() || posting} style={{ flex: 1, background: content.trim() ? 'linear-gradient(135deg, rgba(201,162,39,0.28), rgba(201,162,39,0.16))' : 'rgba(245,240,232,0.05)', border: content.trim() ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(245,240,232,0.08)', borderRadius: '12px', padding: '12px', color: content.trim() ? 'var(--gold-light)' : 'var(--muted)', fontWeight: '600', fontSize: '14px', cursor: content.trim() ? 'pointer' : 'default' }}>
                 {posting ? 'Subiendo...' : 'Publicar'}
               </button>
             </div>
-
-            {/* Inputs ocultos */}
           </div>
         </div>
       )}

@@ -1,38 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
-let bible: any[] | null = null
-
-function getBible() {
-  if (!bible) {
-    const path = join(process.cwd(), 'public', 'bible-es.json')
-    bible = JSON.parse(readFileSync(path, 'utf-8'))
-  }
-  return bible
-}
-
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url)
-  const book    = parseInt(searchParams.get('book')    || '43')
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const book = parseInt(searchParams.get('book') || '1')
   const chapter = parseInt(searchParams.get('chapter') || '1')
 
   try {
-    const data       = getBible()
-    const bookData   = data[book - 1]
-    if (!bookData) return NextResponse.json({ error: 'Libro no encontrado' }, { status: 404 })
+    const filePath = join(process.cwd(), 'public', 'bible-es.json')
+    const bibleData = JSON.parse(readFileSync(filePath, 'utf-8'))
 
-    const chapterArr = bookData.chapters[chapter - 1]
-    if (!chapterArr) return NextResponse.json({ error: 'Capítulo no encontrado' }, { status: 404 })
+    if (!Array.isArray(bibleData)) {
+      return NextResponse.json({ error: 'Formato de Biblia inválido' }, { status: 500 })
+    }
 
-    const verses = chapterArr.map((text: string, i: number) => ({
-      verse: i + 1,
-      text
+    const targetBook = bibleData.find((b: any) => b.number === book)
+    if (!targetBook) {
+      return NextResponse.json({ error: 'Libro no encontrado' }, { status: 440 })
+    }
+
+    const versesArray = targetBook.chapters?.[chapter - 1]
+    if (!versesArray) {
+      return NextResponse.json({ error: 'Capítulo no encontrado' }, { status: 404 })
+    }
+
+    const verses = versesArray.map((text: string, index: number) => ({
+      verse: index + 1,
+      text: text?.trim() || ''
     }))
 
-    return NextResponse.json({ verses, book: bookData.name })
-
+    return NextResponse.json({
+      book: targetBook.name,
+      chapter,
+      verses
+    })
   } catch (e) {
-    return NextResponse.json({ error: 'Error', detail: String(e) }, { status: 500 })
+    return NextResponse.json({ error: 'Error interno', detail: String(e) }, { status: 500 })
   }
 }

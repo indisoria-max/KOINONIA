@@ -1,75 +1,159 @@
-import Link from "next/link";
-import { Shield, Star, Globe, Users, ArrowRight, Heart } from "lucide-react";
+import Link from 'next/link'
+import { Shield, Star, Globe, Users, ArrowRight, Heart, Map, MessageCircle, User, Building2, Pencil, Video, Mail, Navigation, Landmark, Clock, Flame, BookOpen, RefreshCw } from 'lucide-react'
+import { createClient } from '@/lib/supabase/server'
+import DonationForm from '@/components/DonationForm'
 
-export default function HomePage() {
+export const revalidate = 60 // refresca stats cada 60 segundos
+
+export default async function HomePage() {
+  const supabase = await createClient()
+
+  const [{ count: churchCount }, { count: userCount }, { count: postCount }] = await Promise.all([
+    supabase.from('churches').select('*', { count: 'exact', head: true }),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('posts').select('*', { count: 'exact', head: true }),
+  ])
+
+  const stats = [
+    { v: `${churchCount ?? 0}`, l: 'Iglesias mapeadas' },
+    { v: `${userCount ?? 0}+`,  l: 'Peregrinos registrados' },
+    { v: `${postCount ?? 0}+`,  l: 'Reflexiones compartidas' },
+  ]
+
   return (
-    <div className="min-h-screen bg-white">
+    <div style={{ minHeight: '100vh', background: '#0C1828', color: '#F5F0E8', fontFamily: "'Inter', sans-serif" }}>
 
       {/* NAVBAR */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-navy-800 rounded-full flex items-center justify-center shadow-md">
-                <span className="text-gold-400 font-serif text-lg font-bold">K</span>
-              </div>
-              <span className="font-serif text-xl font-bold text-navy-800">Koinonia</span>
-              <span className="hidden sm:inline text-xs text-gray-400 ml-2">κοινωνία</span>
-            </div>
-            <div className="hidden md:flex items-center gap-6">
-              <a href="#como-funciona" className="text-gray-600 hover:text-navy-800 transition-colors text-sm font-medium">Cómo funciona</a>
-              <a href="#espiritual" className="text-gray-600 hover:text-navy-800 transition-colors text-sm font-medium">Recursos espirituales</a>
-              <a href="#seguridad" className="text-gray-600 hover:text-navy-800 transition-colors text-sm font-medium">Seguridad</a>
-            </div>
-            <div className="flex items-center gap-3">
-              <Link href="/login" className="text-navy-800 font-semibold text-sm hover:text-navy-600 transition-colors hidden sm:block">
-                Entrar
-              </Link>
-              <Link href="/register" className="bg-gold-500 hover:bg-gold-600 text-white font-semibold text-sm px-4 py-2 rounded-xl transition-all shadow-md">
-                Unirse gratis
-              </Link>
-            </div>
+      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50, background: 'rgba(12,24,40,0.9)', backdropFilter: 'blur(14px)', borderBottom: '1px solid rgba(201,162,39,0.12)', padding: '0 20px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #1A2E44, #142233)', border: '1px solid rgba(201,162,39,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontFamily: "'Playfair Display', serif", color: '#C9A227', fontWeight: '700', fontSize: '18px' }}>K</span>
           </div>
+          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: '700', color: '#F5F0E8' }}>Koinonia</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Link href="/login" style={{ color: 'rgba(245,240,232,0.7)', fontSize: '14px', fontWeight: '500', textDecoration: 'none', padding: '8px 14px' }}>Entrar</Link>
+          <Link href="/register" style={{ background: 'linear-gradient(135deg, #C9A227, #B8901A)', color: '#0C1828', fontSize: '14px', fontWeight: '700', padding: '9px 18px', borderRadius: '12px', textDecoration: 'none' }}>Unirse gratis</Link>
         </div>
       </nav>
 
       {/* HERO */}
-      <section className="pt-24 pb-20 min-h-screen flex items-center relative overflow-hidden" style={{background: 'linear-gradient(135deg, #162d53 0%, #1B3A6B 50%, #162d53 100%)'}}>
-        <div className="absolute inset-0 opacity-5 pointer-events-none select-none">
-          <div className="absolute top-20 left-16 text-[200px] font-serif leading-none text-white">✝</div>
-          <div className="absolute bottom-20 right-16 text-[200px] font-serif leading-none text-white">✝</div>
+      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: `url(https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1400&q=80)`, backgroundSize: 'cover', backgroundPosition: 'center', filter: 'brightness(0.2) saturate(0.6)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(8,14,24,0.7) 0%, rgba(12,24,40,0.85) 100%)' }} />
+        <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '400px', background: 'radial-gradient(ellipse, rgba(201,162,39,0.12) 0%, transparent 65%)', pointerEvents: 'none' }} />
+
+        <div style={{ position: 'relative', maxWidth: '860px', margin: '0 auto', padding: '100px 24px 60px', textAlign: 'center', width: '100%' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.28)', borderRadius: '9999px', padding: '8px 18px', marginBottom: '32px' }}>
+            <Heart size={14} color="#E8C55A" />
+            <span style={{ fontSize: '13px', fontWeight: '500', color: '#E8C55A' }}>La comunidad católica española para viajeros de fe</span>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+            <svg width="30" height="38" viewBox="0 0 30 38" fill="none" style={{ filter: 'drop-shadow(0 0 18px rgba(201,162,39,0.85))' }}>
+              <defs>
+                <linearGradient id="heroGold" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#F0D070" />
+                  <stop offset="100%" stopColor="#B8901A" />
+                </linearGradient>
+              </defs>
+              <rect x="11" y="0" width="8" height="38" rx="2.5" fill="url(#heroGold)" />
+              <rect x="0" y="9" width="30" height="8" rx="2.5" fill="url(#heroGold)" />
+            </svg>
+          </div>
+
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(36px, 7vw, 72px)', fontWeight: '700', lineHeight: 1.1, marginBottom: '24px', color: '#F5F0E8' }}>
+            Viaja en <span style={{ color: '#E8C55A' }}>comunión</span> de fe
+          </h1>
+          <p style={{ fontSize: 'clamp(16px, 2.5vw, 20px)', lineHeight: 1.7, color: 'rgba(245,240,232,0.75)', maxWidth: '680px', margin: '0 auto 14px' }}>
+            Conecta con católicos, encuentra iglesias en España y comparte tu fe en comunidad.
+          </p>
+          <p style={{ fontSize: '15px', lineHeight: 1.7, color: 'rgba(245,240,232,0.5)', maxWidth: '560px', margin: '0 auto 48px' }}>
+            Mapa de iglesias, horarios de misas, adoración, confesiones y mucho más — todo en tu bolsillo.
+          </p>
+
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '60px' }}>
+            <Link href="/register?rol=peregrino" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg, #C9A227, #B8901A)', color: '#0C1828', fontWeight: '700', fontSize: '16px', padding: '14px 28px', borderRadius: '16px', textDecoration: 'none', boxShadow: '0 4px 20px rgba(201,162,39,0.3)' }}>
+              <Navigation size={18} /> Soy Peregrino <ArrowRight size={18} />
+            </Link>
+            <Link href="/register?rol=anfitrion" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(245,240,232,0.08)', border: '1px solid rgba(245,240,232,0.2)', color: '#F5F0E8', fontWeight: '700', fontSize: '16px', padding: '14px 28px', borderRadius: '16px', textDecoration: 'none' }}>
+              <Building2 size={18} /> Soy Anfitrión <Heart size={18} />
+            </Link>
+          </div>
+
+          {/* Stats reales de la DB */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', maxWidth: '520px', margin: '0 auto', paddingTop: '40px', borderTop: '1px solid rgba(245,240,232,0.1)' }}>
+            {stats.map(s => (
+              <div key={s.l} style={{ textAlign: 'center' }}>
+                <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '32px', fontWeight: '700', color: '#E8C55A' }}>{s.v}</div>
+                <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.5)', marginTop: '4px' }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 rounded-full px-5 py-2 mb-8 border" style={{background: 'rgba(201,162,39,0.2)', borderColor: 'rgba(201,162,39,0.3)'}}>
-              <span className="text-sm font-medium" style={{color: '#e5b43f'}}>🙏 La comunidad católica global para viajeros de fe</span>
-            </div>
-            <h1 className="text-5xl sm:text-7xl font-serif font-bold leading-tight mb-6 text-white">
-              Viaja en <span style={{color: '#e5b43f'}}>comunión</span> de fe
-            </h1>
-            <p className="text-xl md:text-2xl mb-4 leading-relaxed max-w-3xl mx-auto" style={{color: '#bfcde9'}}>
-              Conecta con católicos locales que te mostrarán su ciudad desde el corazón — más allá del turismo.
-            </p>
-            <p className="text-base mb-12 max-w-2xl mx-auto" style={{color: '#94aed9'}}>
-              Encuentra iglesias, horarios de misas, capillas de adoración y mucho más — en cualquier lugar del mundo.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-              <Link href="/register?rol=peregrino" className="w-full sm:w-auto text-white font-bold text-lg px-8 py-4 rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg" style={{background: '#C9A227'}}>
-                🎒 Soy Peregrino <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link href="/register?rol=anfitrion" className="w-full sm:w-auto font-bold text-lg px-8 py-4 rounded-2xl flex items-center justify-center gap-3 transition-all border text-white" style={{background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.3)'}}>
-                🏠 Soy Anfitrión <Heart className="w-5 h-5" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-3 gap-6 pt-10 border-t max-w-2xl mx-auto" style={{borderColor: 'rgba(255,255,255,0.1)'}}>
+      </section>
+
+      {/* CÓMO FUNCIONA */}
+      <section style={{ padding: '80px 24px', background: 'linear-gradient(170deg, #0C1828, #102038)' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: '700', color: '#F5F0E8', marginBottom: '12px' }}>¿Cómo funciona?</h2>
+            <p style={{ color: 'rgba(245,240,232,0.55)', fontSize: '16px', maxWidth: '500px', margin: '0 auto' }}>Empieza en segundos y descubre todo lo que Koinonia tiene para ti.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+
+            <div style={{ background: 'linear-gradient(135deg, rgba(26,46,66,0.8), rgba(20,34,51,0.75))', borderRadius: '24px', padding: '28px', border: '1px solid rgba(201,162,39,0.15)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Navigation size={22} color="#C9A227" />
+                </div>
+                <div>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: '700', color: '#F5F0E8', margin: 0 }}>Para Peregrinos</h3>
+                  <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.45)', margin: '2px 0 0' }}>Los que viajan</p>
+                </div>
+              </div>
               {[
-                { valor: "+10k", etiqueta: "Iglesias mapeadas" },
-                { valor: "50+", etiqueta: "Países" },
-                { valor: "100%", etiqueta: "Gratuito" },
-              ].map((stat) => (
-                <div key={stat.valor} className="text-center">
-                  <div className="text-3xl font-serif font-bold" style={{color: '#e5b43f'}}>{stat.valor}</div>
-                  <div className="text-sm mt-1" style={{color: '#94aed9'}}>{stat.etiqueta}</div>
+                { n: '1', Icon: User,          t: 'Crea tu perfil',        d: 'Regístrate en segundos' },
+                { n: '2', Icon: Map,           t: 'Explora el mapa',       d: 'Encuentra iglesias cercanas' },
+                { n: '3', Icon: MessageCircle, t: 'Únete a la comunidad',  d: 'Comparte reflexiones y oraciones' },
+                { n: '4', Icon: BookOpen,      t: 'Lee la Biblia',         d: 'RVR1960 completa en tu idioma' },
+              ].map(({ n, Icon, t, d }) => (
+                <div key={n} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(201,162,39,0.2)', border: '1px solid rgba(201,162,39,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#E8C55A', flexShrink: 0 }}>{n}</div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#F5F0E8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Icon size={13} color="rgba(201,162,39,0.7)" /> {t}
+                    </p>
+                    <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'rgba(245,240,232,0.5)' }}>{d}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ background: 'linear-gradient(135deg, rgba(201,162,39,0.12), rgba(201,162,39,0.05))', borderRadius: '24px', padding: '28px', border: '1px solid rgba(201,162,39,0.25)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Building2 size={22} color="#C9A227" />
+                </div>
+                <div>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', fontWeight: '700', color: '#F5F0E8', margin: 0 }}>Para Anfitriones</h3>
+                  <p style={{ fontSize: '12px', color: 'rgba(245,240,232,0.45)', margin: '2px 0 0' }}>Los que acogen</p>
+                </div>
+              </div>
+              {[
+                { n: '1', Icon: Pencil,        t: 'Crea tu perfil',        d: 'Comparte quién eres' },
+                { n: '2', Icon: MessageCircle, t: 'Participa',             d: 'Comparte en la comunidad' },
+                { n: '3', Icon: Mail,          t: 'Recibe peregrinos',     d: 'Conéctate con viajeros de fe' },
+                { n: '4', Icon: Heart,         t: 'Anuncia tu negocio',    d: 'En Partners con valores católicos' },
+              ].map(({ n, Icon, t, d }) => (
+                <div key={n} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: '#C9A227', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#0C1828', flexShrink: 0 }}>{n}</div>
+                  <div>
+                    <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#F5F0E8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Icon size={13} color="rgba(201,162,39,0.7)" /> {t}
+                    </p>
+                    <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'rgba(245,240,232,0.5)' }}>{d}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -77,186 +161,91 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CÓMO FUNCIONA */}
-      <section id="como-funciona" className="py-24" style={{background: '#F5F0E8'}}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4" style={{color: '#1B3A6B'}}>¿Cómo funciona?</h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">En pocos pasos vivirás una experiencia única de fe y hermandad.</p>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            <div className="bg-white rounded-3xl p-8 shadow-md border border-gray-100">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style={{background: '#f9f0d0'}}>🎒</div>
-                <div>
-                  <h3 className="text-2xl font-serif font-bold" style={{color: '#1B3A6B'}}>Para Peregrinos</h3>
-                  <p className="text-sm text-gray-500">Los que viajan</p>
-                </div>
-              </div>
-              <div className="space-y-5">
-                {[
-                  { n: "1", emoji: "🌍", title: "Elige tu destino", desc: "Escribe la ciudad que vas a visitar" },
-                  { n: "2", emoji: "👤", title: "Elige tu anfitrión", desc: "Explora perfiles con vídeo de presentación" },
-                  { n: "3", emoji: "💬", title: "Conéctate", desc: "Chatea o haz una videollamada para conocerle" },
-                  { n: "4", emoji: "🏙️", title: "Vive la ciudad", desc: "Descubre los rincones que solo conocen los locales" },
-                ].map((paso) => (
-                  <div key={paso.n} className="flex items-start gap-4">
-                    <div className="w-8 h-8 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" style={{background: '#1B3A6B'}}>{paso.n}</div>
-                    <div>
-                      <p className="font-semibold text-gray-800">{paso.emoji} {paso.title}</p>
-                      <p className="text-gray-500 text-sm">{paso.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-3xl p-8 text-white shadow-md" style={{background: '#1B3A6B'}}>
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style={{background: 'rgba(255,255,255,0.1)'}}>🏠</div>
-                <div>
-                  <h3 className="text-2xl font-serif font-bold">Para Anfitriones</h3>
-                  <p className="text-sm" style={{color: '#bfcde9'}}>Los que acogen</p>
-                </div>
-              </div>
-              <div className="space-y-5">
-                {[
-                  { n: "1", emoji: "✍️", title: "Crea tu perfil", desc: "Comparte quién eres y lo que puedes ofrecer" },
-                  { n: "2", emoji: "🎥", title: "Graba tu vídeo", desc: "Preséntate para que los peregrinos te conozcan" },
-                  { n: "3", emoji: "📩", title: "Recibe solicitudes", desc: "Los peregrinos interesados te contactarán" },
-                  { n: "4", emoji: "❤️", title: "Comparte tu fe", desc: "Muéstrales tu ciudad con ojos de fe y amor" },
-                ].map((paso) => (
-                  <div key={paso.n} className="flex items-start gap-4">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" style={{background: '#C9A227', color: '#1B3A6B'}}>{paso.n}</div>
-                    <div>
-                      <p className="font-semibold text-white">{paso.emoji} {paso.title}</p>
-                      <p className="text-sm" style={{color: '#bfcde9'}}>{paso.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* RECURSOS ESPIRITUALES */}
-      <section id="espiritual" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4" style={{color: '#1B3A6B'}}>Tu guía espiritual completa</h2>
-            <p className="text-gray-600 text-lg max-w-2xl mx-auto">Todo lo que necesitas para alimentar tu fe mientras viajas.</p>
+      <section style={{ padding: '80px 24px', background: '#0B1820' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '56px' }}>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: '700', color: '#F5F0E8', marginBottom: '12px' }}>Todo para tu vida espiritual</h2>
+            <p style={{ color: 'rgba(245,240,232,0.55)', fontSize: '16px', maxWidth: '480px', margin: '0 auto' }}>Herramientas reales para alimentar tu fe cada día.</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
             {[
-              { emoji: "⛪", title: "Mapa de Iglesias", desc: "Encuentra todas las iglesias católicas cerca de ti con un solo toque", bg: "#eff6ff", border: "#bfcde9" },
-              { emoji: "🕐", title: "Horarios de Misas", desc: "Consulta los horarios de misas actualizados para no perderte ninguna", bg: "#fdf9ed", border: "#eccb6a" },
-              { emoji: "🕯️", title: "Adoración Perpetua", desc: "Localiza las capillas donde puedes estar ante el Señor 24h", bg: "#faf5ff", border: "#d8b4fe" },
-              { emoji: "🙏", title: "Confesiones", desc: "Horarios de confesión en cada parroquia para no perderte este sacramento", bg: "#f0fdf4", border: "#86efac" },
-              { emoji: "🏛️", title: "Santuarios y Retiros", desc: "Descubre santuarios, monasterios y lugares de peregrinación locales", bg: "#fff1f2", border: "#fda4af" },
-              { emoji: "👥", title: "Grupos de Oración", desc: "Conéctate con grupos de oración locales durante tu visita", bg: "#eef2ff", border: "#a5b4fc" },
-            ].map((f, i) => (
-              <div key={i} className="rounded-2xl p-6 border-2 hover:shadow-md transition-all" style={{background: f.bg, borderColor: f.border}}>
-                <div className="text-4xl mb-4">{f.emoji}</div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{f.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{f.desc}</p>
+              { Icon: Landmark,      t: 'Mapa de Iglesias',      d: 'Más de 80 iglesias católicas en España con GPS' },
+              { Icon: Clock,         t: 'Horarios de Misas',     d: 'Consulta los horarios actualizados de cada parroquia' },
+              { Icon: Flame,         t: 'Adoración Perpetua',    d: 'Capillas con adoración al Santísimo localizadas' },
+              { Icon: Shield,        t: 'Confesiones',           d: 'Horarios de confesión en cada parroquia' },
+              { Icon: BookOpen,      t: 'La Biblia Completa',    d: 'Reina-Valera 1960 — 66 libros en tu bolsillo' },
+              { Icon: Users,         t: 'Comunidad de Fe',       d: 'Comparte reflexiones, oraciones y testimonios' },
+            ].map(({ Icon, t, d }, i) => (
+              <div key={i} style={{ background: 'linear-gradient(135deg, rgba(26,46,66,0.7), rgba(20,34,51,0.65))', borderRadius: '18px', padding: '22px', border: '1px solid rgba(201,162,39,0.12)' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                  <Icon size={20} color="#C9A227" />
+                </div>
+                <h3 style={{ fontSize: '15px', fontWeight: '600', color: '#F5F0E8', marginBottom: '6px' }}>{t}</h3>
+                <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.5)', lineHeight: 1.6, margin: 0 }}>{d}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* SEGURIDAD */}
-      <section id="seguridad" className="py-24" style={{background: '#F5F0E8'}}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row items-center gap-16">
-            <div className="flex-1">
-              <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6" style={{color: '#1B3A6B'}}>Tu seguridad es nuestra prioridad</h2>
-              <p className="text-gray-600 mb-8 leading-relaxed text-lg">Nuestro sistema de verificación por niveles te da la confianza necesaria para conectar con desconocidos.</p>
-              <div className="space-y-5">
-                {[
-                  { icon: <Shield className="w-5 h-5" />, title: "Perfiles verificados", desc: "Verificación de identidad y comunidad parroquial en 4 niveles" },
-                  { icon: <Star className="w-5 h-5" />, title: "Sistema de reseñas", desc: "Lee las experiencias de otros antes de conectar con alguien" },
-                  { icon: <Globe className="w-5 h-5" />, title: "Moderación activa", desc: "Equipo dedicado a mantener la comunidad segura y respetuosa" },
-                  { icon: <Users className="w-5 h-5" />, title: "Menores protegidos", desc: "Las familias con menores tienen protecciones adicionales" },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-yellow-400" style={{background: '#1B3A6B'}}>{item.icon}</div>
-                    <div>
-                      <p className="font-semibold text-gray-900">{item.title}</p>
-                      <p className="text-gray-500 text-sm">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex-1 rounded-3xl p-8 text-white shadow-xl w-full max-w-md" style={{background: '#1B3A6B'}}>
-              <div className="text-center mb-8">
-                <div className="text-5xl mb-3">🛡️</div>
-                <h3 className="text-2xl font-serif font-bold">Niveles de verificación</h3>
-                <p className="text-sm mt-2" style={{color: '#94aed9'}}>Cuanto mayor el nivel, más confianza</p>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { nivel: 1, texto: "Email verificado", color: "#60a5fa" },
-                  { nivel: 2, texto: "Teléfono verificado", color: "#4ade80" },
-                  { nivel: 3, texto: "Documento de identidad", color: "#C9A227" },
-                  { nivel: 4, texto: "Verificación parroquial", color: "#c084fc" },
-                ].map((v) => (
-                  <div key={v.nivel} className="flex items-center gap-3 rounded-xl px-4 py-3 border" style={{background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.05)'}}>
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0" style={{background: v.color, color: '#1B3A6B'}}>{v.nivel}</div>
-                    <span className="text-sm flex-1">{v.texto}</span>
-                    <span className="text-green-400 text-lg">✓</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-6 rounded-xl p-4 text-center border" style={{background: 'rgba(201,162,39,0.2)', borderColor: 'rgba(201,162,39,0.3)'}}>
-                <p className="text-sm" style={{color: '#e5b43f'}}>🏆 Los anfitriones con Nivel 4 tienen el sello <strong>«Verificado Koinonia»</strong></p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA FINAL */}
-      <section className="py-24 text-white text-center" style={{background: 'linear-gradient(135deg, #162d53 0%, #1B3A6B 100%)'}}>
-        <div className="max-w-3xl mx-auto px-4">
-          <div className="text-6xl mb-6">🙏</div>
-          <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">Empieza tu peregrinaje hoy</h2>
-          <p className="text-lg mb-12 leading-relaxed" style={{color: '#bfcde9'}}>Únete a la comunidad de católicos que viajan y acogen en el nombre de la fe. Gratuito para siempre en su esencia.</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/register" className="text-white font-bold text-lg px-10 py-4 rounded-2xl transition-all shadow-lg" style={{background: '#C9A227'}}>
+      <section style={{ padding: '80px 24px', background: 'linear-gradient(170deg, #0C1828, #102038)', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '600px', height: '400px', background: 'radial-gradient(ellipse, rgba(201,162,39,0.1) 0%, transparent 65%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'relative', maxWidth: '600px', margin: '0 auto' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+            <Heart size={32} color="#C9A227" />
+          </div>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px, 5vw, 44px)', fontWeight: '700', color: '#F5F0E8', marginBottom: '16px' }}>Empieza tu peregrinaje hoy</h2>
+          <p style={{ fontSize: '16px', lineHeight: 1.75, color: 'rgba(245,240,232,0.55)', maxWidth: '480px', margin: '0 auto 40px' }}>
+            Únete a la comunidad de católicos que viajan y acogen en el nombre de la fe. Gratuito para siempre.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/register" style={{ display: 'inline-block', background: 'linear-gradient(135deg, #C9A227, #B8901A)', color: '#0C1828', fontWeight: '700', fontSize: '16px', padding: '15px 32px', borderRadius: '16px', textDecoration: 'none', boxShadow: '0 4px 20px rgba(201,162,39,0.3)' }}>
               Registrarme gratis
             </Link>
-            <Link href="/mapa" className="font-bold text-lg px-10 py-4 rounded-2xl transition-all border text-white" style={{background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.3)'}}>
+            <Link href="/mapa" style={{ display: 'inline-block', background: 'rgba(245,240,232,0.06)', border: '1px solid rgba(245,240,232,0.15)', color: '#F5F0E8', fontWeight: '700', fontSize: '16px', padding: '15px 32px', borderRadius: '16px', textDecoration: 'none' }}>
               Explorar el mapa
             </Link>
           </div>
         </div>
       </section>
 
+      {/* DONACIÓN */}
+      <section id="donacion" style={{ padding: '80px 24px', background: '#080E18' }}>
+        <div style={{ maxWidth: '560px', margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <Heart size={28} color="#C9A227" />
+          </div>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: '700', color: '#F5F0E8', marginBottom: '12px' }}>Apoya a Koinonia</h2>
+          <p style={{ fontSize: '15px', lineHeight: 1.75, color: 'rgba(245,240,232,0.55)', marginBottom: '36px', maxWidth: '440px', margin: '0 auto 36px' }}>
+            Koinonia es gratuita para todos. Si quieres contribuir a mantener y crecer esta comunidad de fe, cualquier donación es bienvenida.
+          </p>
+          <DonationForm />
+        </div>
+      </section>
+
       {/* FOOTER */}
-      <footer className="py-12" style={{background: '#0a0f1a'}}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{background: '#1B3A6B'}}>
-                <span className="font-serif font-bold text-sm" style={{color: '#C9A227'}}>K</span>
-              </div>
-              <span className="font-serif font-bold text-lg text-white">Koinonia</span>
+      <footer style={{ padding: '40px 24px', background: '#060A12', borderTop: '1px solid rgba(245,240,232,0.06)' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #1A2E44, #142233)', border: '1px solid rgba(201,162,39,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ fontFamily: "'Playfair Display', serif", color: '#C9A227', fontWeight: '700' }}>K</span>
             </div>
-            <div className="text-sm text-center leading-loose text-gray-400">
-              <p className="text-gray-300">κοινωνία — Comunión · Fraternidad · Fe</p>
-              <p>© 2026 Koinonia. Hecho con ❤️ y ✝️</p>
-            </div>
-            <div className="flex gap-6 text-sm text-gray-400">
-              <a href="#" className="hover:text-white transition-colors">Privacidad</a>
-              <a href="#" className="hover:text-white transition-colors">Términos</a>
-              <a href="#" className="hover:text-white transition-colors">Contacto</a>
-            </div>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', fontWeight: '700', color: '#F5F0E8' }}>Koinonia</span>
+          </div>
+          <p style={{ fontSize: '13px', color: 'rgba(245,240,232,0.35)', textAlign: 'center', margin: 0, lineHeight: 1.7 }}>
+            κοινωνία — Comunión · Fraternidad · Fe<br />
+            © 2026 Koinonia. Hecho con fe
+          </p>
+          <div style={{ display: 'flex', gap: '24px' }}>
+            {['Privacidad', 'Términos', 'Contacto'].map(l => (
+              <a key={l} href="#" style={{ fontSize: '13px', color: 'rgba(245,240,232,0.35)', textDecoration: 'none' }}>{l}</a>
+            ))}
           </div>
         </div>
       </footer>
 
     </div>
-  );
+  )
 }
