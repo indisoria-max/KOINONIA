@@ -4,9 +4,17 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
 import dynamic from 'next/dynamic'
-import { Church, Flame, Cross, MapPin, Phone, Globe, Clock, Navigation } from 'lucide-react'
+import { Church as ChurchIcon, Flame, Cross, MapPin, Phone, Globe, Clock, Navigation } from 'lucide-react'
 
-const Map = dynamic(() => import('@/components/Map'), { ssr: false })
+// Carga dinámica estricta para evitar SSR con Leaflet
+const Map = dynamic(() => import('@/components/Map'), { 
+  ssr: false,
+  loading: () => (
+    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0C1828', color: 'var(--muted)', fontSize: '14px' }}>
+      Cargando mapa...
+    </div>
+  )
+})
 
 type Church = {
   id: string
@@ -90,9 +98,9 @@ export default function MapaPage() {
   }, {} as Record<string, string[]>)
 
   const FILTERS = [
-    { key: 'all',         label: 'Todas',       Icon: Church  },
-    { key: 'adoration',   label: 'Adoración',   Icon: Flame   },
-    { key: 'confessions', label: 'Confesiones', Icon: Cross   },
+    { key: 'all',         label: 'Todas',       Icon: ChurchIcon },
+    { key: 'adoration',   label: 'Adoración',   Icon: Flame      },
+    { key: 'confessions', label: 'Confesiones', Icon: Cross      },
   ]
 
   return (
@@ -106,7 +114,6 @@ export default function MapaPage() {
 
       {mounted && createPortal(
         <>
-          {/* Filtros */}
           <div style={{
             position: 'fixed', top: '72px', left: '50%',
             transform: 'translateX(-50%)', zIndex: 99999,
@@ -139,7 +146,6 @@ export default function MapaPage() {
             ))}
           </div>
 
-          {/* Panel inferior */}
           {selected && (
             <div style={{
               position: 'fixed', bottom: '64px', left: 0, right: 0,
@@ -155,7 +161,6 @@ export default function MapaPage() {
               </div>
 
               <div style={{ padding: '14px 20px 24px' }}>
-                {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                   <div style={{ flex: 1, paddingRight: '8px' }}>
                     <h2 style={{ fontFamily: "'Playfair Display', serif", fontWeight: '700', fontSize: '20px', color: 'var(--text)', margin: 0 }}>
@@ -173,7 +178,6 @@ export default function MapaPage() {
                   </button>
                 </div>
 
-                {/* Badges */}
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
                   {selected.has_adoration && (
                     <span style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.3)', color: 'var(--gold-light)', fontSize: '12px', padding: '4px 12px', borderRadius: '9999px', fontWeight: '500' }}>
@@ -187,7 +191,6 @@ export default function MapaPage() {
                   )}
                 </div>
 
-                {/* Contacto */}
                 {(selected.phone || selected.website) && (
                   <div style={{ display: 'flex', gap: '14px', marginBottom: '16px' }}>
                     {selected.phone && (
@@ -203,7 +206,6 @@ export default function MapaPage() {
                   </div>
                 )}
 
-                {/* Horarios */}
                 {Object.keys(groupedSchedules).length > 0 && (
                   <div style={{ marginBottom: '18px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
@@ -230,7 +232,6 @@ export default function MapaPage() {
                   </div>
                 )}
 
-                {/* Navegación */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                   <div style={{ width: '2px', height: '14px', background: 'var(--gold)', borderRadius: '1px' }} />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
