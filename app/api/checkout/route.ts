@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
   try {
+    const apiKey = process.env.STRIPE_SECRET_KEY
+    if (!apiKey) {
+      return NextResponse.json({ error: 'Stripe API Key no configurada' }, { status: 500 })
+    }
+
+    const Stripe = (await import('stripe')).default
+    const stripe = new Stripe(apiKey)
+
     const body = await req.json()
 
     const session = await stripe.checkout.sessions.create({
