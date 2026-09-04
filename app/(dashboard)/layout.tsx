@@ -19,7 +19,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── Header ── */}
+      {/* Header */}
       <header style={{
         backgroundColor: 'rgba(10,16,25,0.95)',
         backdropFilter: 'blur(12px)',
@@ -31,11 +31,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div style={{
             width: '32px', height: '32px', borderRadius: '50%',
-            background: 'linear-gradient(135deg, #1B3A6B, #2d5fa8)',
             border: '1px solid var(--border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
+            overflow: 'hidden', background: '#0C1828'
           }}>
-            <span style={{ color: 'var(--gold)', fontSize: '14px', fontWeight: 900 }}>✝</span>
+            <img src="/icon-192.png" alt="Koinonia" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <span style={{ color: 'var(--text)', fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: '18px', letterSpacing: '0.3px' }}>
             Koinonia
@@ -56,12 +55,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </Link>
       </header>
 
-      {/* ── Contenido ── */}
+      {/* Contenido */}
       <main style={{ flex: 1, overflowY: 'auto', paddingBottom: '72px' }}>
         {children}
       </main>
 
-      {/* ── Nav inferior ── */}
+      {/* Nav inferior */}
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         backgroundColor: 'rgba(10,16,25,0.97)',

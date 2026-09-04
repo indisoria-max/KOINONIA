@@ -20,7 +20,6 @@ type MapProps = {
 
 export default function Map({ churches, onSelect }: MapProps) {
   useEffect(() => {
-    // Inyecta el CSS de Leaflet dinámicamente si no existe
     if (!document.getElementById('leaflet-css')) {
       const link = document.createElement('link')
       link.id = 'leaflet-css'
@@ -31,20 +30,19 @@ export default function Map({ churches, onSelect }: MapProps) {
 
     let mapInstance: any = null
 
-    // Carga asíncrona segura solo en el cliente
     import('leaflet').then((L) => {
       const container = document.getElementById('map-container')
       if (!container) return
 
-      // Evita inicializar doble mapa
       if ((container as any)._leaflet_id) {
         return
       }
 
       mapInstance = L.map('map-container').setView([40.416775, -3.70379], 6)
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
+      // Capa OpenStreetMap 100% gratuita y sin necesidad de API Key
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,
       }).addTo(mapInstance)
 
