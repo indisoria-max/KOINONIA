@@ -6,7 +6,6 @@ import { createClient } from '@/lib/supabase/client'
 import dynamic from 'next/dynamic'
 import { Church as ChurchIcon, Flame, Cross, MapPin, Phone, Globe, Clock, Navigation } from 'lucide-react'
 
-// Carga dinámica estricta para evitar SSR con Leaflet
 const Map = dynamic(() => import('@/components/Map'), { 
   ssr: false,
   loading: () => (
