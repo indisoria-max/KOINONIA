@@ -1,75 +1,95 @@
 'use client'
 
-import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
 import { useEffect } from 'react'
-
-delete (L.Icon.Default.prototype as any)._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-})
-
-const churchIcon = new L.Icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-})
 
 type Church = {
   id: string
   name: string
   address: string
   city: string
-  phone: string
-  website: string
   latitude: number
   longitude: number
   has_adoration: boolean
   has_confessions: boolean
 }
 
-function ResizeMap() {
-  const map = useMap()
-  useEffect(() => {
-    setTimeout(() => map.invalidateSize(), 100)
-  }, [map])
-  return null
-}
-
-export default function Map({
-  churches,
-  onSelect
-}: {
+type MapProps = {
   churches: Church[]
   onSelect: (church: Church) => void
-}) {
+}
+
+export default function Map({ churches, onSelect }: MapProps) {
+  useEffect(() => {
+    // Inyecta el CSS de Leaflet dinámicamente si no existe
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link')
+      link.id = 'leaflet-css'
+      link.rel = 'stylesheet'
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+      document.head.appendChild(link)
+    }
+
+    let mapInstance: any = null
+
+    // Carga asíncrona segura solo en el cliente
+    import('leaflet').then((L) => {
+      const container = document.getElementById('map-container')
+      if (!container) return
+
+      // Evita inicializar doble mapa
+      if ((container as any)._leaflet_id) {
+        return
+      }
+
+      mapInstance = L.map('map-container').setView([40.416775, -3.70379], 6)
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+        maxZoom: 19,
+      }).addTo(mapInstance)
+
+      const defaultIcon = L.divIcon({
+        className: 'custom-map-pin',
+        html: `
+          <div style="
+            width: 28px; height: 28px;
+            background: linear-gradient(135deg, #C9A227, #B8901A);
+            border: 2px solid #F5F0E8;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            color: #0C1828; font-weight: bold; font-size: 14px;
+          ">⛪</div>
+        `,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14],
+      })
+
+      churches.forEach((church) => {
+        if (church.latitude && church.longitude) {
+          const marker = L.marker([church.latitude, church.longitude], { icon: defaultIcon }).addTo(mapInstance)
+          marker.on('click', () => {
+            onSelect(church)
+          })
+        }
+      })
+    })
+
+    return () => {
+      if (mapInstance) {
+        mapInstance.remove()
+      }
+    }
+  }, [churches, onSelect])
+
   return (
-    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}>
-      <MapContainer
-        center={[40.4168, -3.7038]}
-        zoom={6}
-        style={{ width: '100%', height: '100%' }}
-        zoomControl={false}
-      >
-        <ResizeMap />
-        <TileLayer
-          attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {churches.map(church => (
-          <Marker
-            key={church.id}
-            position={[church.latitude, church.longitude]}
-            icon={churchIcon}
-            eventHandlers={{ click: () => onSelect(church) }}
-          />
-        ))}
-      </MapContainer>
-    </div>
+    <div
+      id="map-container"
+      style={{
+        width: '100%',
+        height: '100%',
+        background: '#0C1828',
+      }}
+    />
   )
 }
