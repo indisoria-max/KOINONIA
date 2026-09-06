@@ -116,7 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         backgroundColor: 'rgba(10,16,25,0.97)',
         backdropFilter: 'blur(16px)',
         borderTop: '1px solid var(--border2)',
-        zIndex: 10, padding: '6px 0 8px'
+        zIndex: 10, padding: '6px 0 24px'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
           <NavItem href="/dashboard"  icon={<Home size={22} />}          label="Inicio"    active={pathname === '/dashboard'} />

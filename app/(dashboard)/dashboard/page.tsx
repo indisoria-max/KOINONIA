@@ -164,7 +164,7 @@ export default function DashboardPage() {
               <BookOpen size={26} color="var(--gold)" />
               <div>
                 <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)' }}>La Biblia</div>
-                <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.55)', marginTop: '3px' }}>Reina-Valera 1960 · 66 libros</div>
+                <div style={{ fontSize: '12px', color: 'rgba(245,240,232,0.55)', marginTop: '3px' }}>Biblia Católica · 73 libros</div>
               </div>
               <span style={{ marginLeft: 'auto', color: 'var(--gold-light)', fontSize: '18px', opacity: 0.7 }}>→</span>
             </div>
