@@ -32,7 +32,7 @@ export default function Map({ churches, onSelect }: MapProps) {
       })
 
       L.tileLayer(
-        `https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png?api_key=${process.env.NEXT_PUBLIC_STADIA_KEY}`,
+        `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${process.env.NEXT_PUBLIC_STADIA_KEY}`,
         { attribution: '© Stadia Maps © OpenStreetMap', maxZoom: 20 }
       ).addTo(map)
 
@@ -138,10 +138,11 @@ export default function Map({ churches, onSelect }: MapProps) {
       <button onClick={handleLocate} style={{
         position: 'absolute', bottom: '16px', right: '10px', zIndex: 1000,
         width: '42px', height: '42px', borderRadius: '10px',
-        background: 'rgba(255,255,255,0.92)',
-        border: '1px solid rgba(0,0,0,0.1)',
+        background: 'rgba(20,30,48,0.92)',
+        border: '1px solid rgba(201,162,39,0.3)',
         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+        backdropFilter: 'blur(8px)',
       }}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A227" strokeWidth="2" strokeLinecap="round">
           <circle cx="12" cy="12" r="3" fill="#C9A227" fillOpacity="0.3"/>
