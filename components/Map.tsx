@@ -31,9 +31,8 @@ export default function Map({ churches, onSelect }: MapProps) {
         zoomControl: false,
       })
 
-      // Stadia Alidade Smooth — estilo Apple Maps
       L.tileLayer(
-        `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${process.env.NEXT_PUBLIC_STADIA_KEY}`,
+        `https://tiles.stadiamaps.com/tiles/osm_bright/{z}/{x}/{y}{r}.png?api_key=${process.env.NEXT_PUBLIC_STADIA_KEY}`,
         { attribution: '© Stadia Maps © OpenStreetMap', maxZoom: 20 }
       ).addTo(map)
 
