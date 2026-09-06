@@ -16,19 +16,29 @@ type Profile = {
   id: string
   first_name: string
   last_name: string
-  avatar_url: string
+  avatar_url: string | null
 }
 
 export default function ChatPage() {
   const { id } = useParams()
   const router = useRouter()
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages]       = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState('')
-  const [user, setUser] = useState<any>(null)
-  const [other, setOther] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser]               = useState<any>(null)
+  const [other, setOther]             = useState<Profile | null>(null)
+  const [loading, setLoading]         = useState(true)
+  const [sending, setSending]         = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const supabase = createClient()
+  const supabase  = createClient()
+
+  async function fetchMessages() {
+    const { data } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('connection_id', id)
+      .order('created_at', { ascending: true })
+    if (data) setMessages(data)
+  }
 
   useEffect(() => {
     const init = async () => {
@@ -55,18 +65,13 @@ export default function ChatPage() {
         setOther(otherProfile as Profile)
       }
 
-      const { data: msgs } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('connection_id', id)
-        .order('created_at', { ascending: true })
-
-      setMessages(msgs || [])
+      await fetchMessages()
       setLoading(false)
     }
 
     init()
 
+    // Suscripción Realtime
     const channel = supabase
       .channel(`chat-${id}`)
       .on('postgres_changes', {
@@ -75,11 +80,15 @@ export default function ChatPage() {
         table: 'messages',
         filter: `connection_id=eq.${id}`
       }, (payload) => {
-        setMessages(prev => [...prev, payload.new as Message])
+        setMessages(prev => {
+          if (prev.some(m => m.id === payload.new.id)) return prev
+          return [...prev, payload.new as Message]
+        })
       })
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   useEffect(() => {
@@ -87,16 +96,25 @@ export default function ChatPage() {
   }, [messages])
 
   const sendMessage = async () => {
-    if (!newMessage.trim() || !user) return
+    if (!newMessage.trim() || !user || sending) return
     const content = newMessage.trim()
     setNewMessage('')
+    setSending(true)
 
-    await supabase.from('messages').insert({
+    const { data, error } = await supabase.from('messages').insert({
       connection_id: id,
       sender_id: user.id,
       content,
       read: false
-    })
+    }).select().single()
+
+    if (error) {
+      alert('Error enviando mensaje: ' + error.message)
+      setNewMessage(content)
+    } else if (data) {
+      setMessages(prev => [...prev, data as Message])
+    }
+    setSending(false)
   }
 
   if (loading) return (
@@ -133,7 +151,7 @@ export default function ChatPage() {
           </div>
         )}
         <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: '700', fontSize: '16px', color: 'var(--text)', margin: 0 }}>
-          {other?.first_name} {other?.last_name}
+          {other ? `${other.first_name || ''} ${other.last_name || ''}` : 'Chat'}
         </p>
       </div>
 
@@ -183,14 +201,15 @@ export default function ChatPage() {
         />
         <button
           onClick={sendMessage}
+          disabled={sending || !newMessage.trim()}
           style={{
             width: '42px', height: '42px', borderRadius: '50%',
-            background: 'linear-gradient(135deg, #C9A227, #B8901A)',
+            background: newMessage.trim() ? 'linear-gradient(135deg, #C9A227, #B8901A)' : 'rgba(245,240,232,0.1)',
             border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', flexShrink: 0,
+            cursor: newMessage.trim() ? 'pointer' : 'default', flexShrink: 0, opacity: sending ? 0.5 : 1,
           }}
         >
-          <Send size={18} color="#0C1828" />
+          <Send size={18} color={newMessage.trim() ? '#0C1828' : 'var(--muted)'} />
         </button>
       </div>
     </div>

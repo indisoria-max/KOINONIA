@@ -2,24 +2,26 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { Heart, Plus, X, ImageIcon, Video, Music, BookOpen, Sparkles } from 'lucide-react'
+import { Heart, Plus, X, ImageIcon, Video, Music, BookOpen, Sparkles, Flame } from 'lucide-react'
 
 type Post = {
   id: string
   content: string
-  type: 'reflexion' | 'oracion' | 'testimonio'
+  type: 'reflexion' | 'oracion' | 'testimonio' | 'peticion'
   media_url:  string | null
   media_type: 'image' | 'video' | 'audio' | null
   created_at: string
   user_id: string
   profiles: { first_name: string; last_name: string; avatar_url: string | null }
   post_likes: { user_id: string }[]
+  post_prayers?: { user_id: string }[]
 }
 
 const TYPE_CONFIG = {
   reflexion:  { label: 'Reflexión',  Icon: BookOpen  },
   oracion:    { label: 'Oración',    Icon: Heart     },
   testimonio: { label: 'Testimonio', Icon: Sparkles  },
+  peticion:   { label: 'Petición',   Icon: Flame     },
 }
 
 function timeAgo(date: string): string {
@@ -53,7 +55,7 @@ export default function ComunidadPage() {
   async function loadPosts() {
     const { data } = await supabase
       .from('posts')
-      .select('*, profiles(first_name, last_name, avatar_url), post_likes(user_id)')
+      .select('*, profiles(first_name, last_name, avatar_url), post_likes(user_id), post_prayers(user_id)')
       .order('created_at', { ascending: false })
       .limit(30)
     if (data) setPosts(data as Post[])
@@ -91,11 +93,22 @@ export default function ComunidadPage() {
 
   async function handleLike(post: Post) {
     if (!userId) return
-    const liked = post.post_likes.some(l => l.user_id === userId)
+    const liked = post.post_likes?.some(l => l.user_id === userId)
     if (liked) {
       await supabase.from('post_likes').delete().eq('post_id', post.id).eq('user_id', userId)
     } else {
       await supabase.from('post_likes').insert({ post_id: post.id, user_id: userId })
+    }
+    loadPosts()
+  }
+
+  async function handlePray(post: Post) {
+    if (!userId) return
+    const prayed = post.post_prayers?.some(p => p.user_id === userId)
+    if (prayed) {
+      await supabase.from('post_prayers').delete().eq('post_id', post.id).eq('user_id', userId)
+    } else {
+      await supabase.from('post_prayers').insert({ post_id: post.id, user_id: userId })
     }
     loadPosts()
   }
@@ -160,7 +173,7 @@ export default function ComunidadPage() {
           <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(201,162,39,0.15)', border: '1px solid rgba(201,162,39,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Plus size={18} color="var(--gold)" />
           </div>
-          <span style={{ color: 'var(--muted)', fontSize: '14px' }}>Comparte una reflexión, oración o testimonio...</span>
+          <span style={{ color: 'var(--muted)', fontSize: '14px' }}>Comparte reflexión, oración o petición...</span>
         </button>
 
         {/* Feed */}
@@ -178,11 +191,12 @@ export default function ComunidadPage() {
           )}
 
           {posts.map(post => {
-            const liked   = post.post_likes.some(l => l.user_id === userId)
-            const cfg     = TYPE_CONFIG[post.type]
-            const TypeIcon = cfg?.Icon || BookOpen
-            const name    = `${post.profiles?.first_name || ''} ${post.profiles?.last_name || ''}`.trim() || 'Usuario'
-            const inicial = name[0]?.toUpperCase() || '?'
+            const liked    = post.post_likes?.some(l => l.user_id === userId)
+            const prayed   = post.post_prayers?.some(p => p.user_id === userId)
+            const cfg      = TYPE_CONFIG[post.type] || TYPE_CONFIG.reflexion
+            const TypeIcon = cfg.Icon
+            const name     = `${post.profiles?.first_name || ''} ${post.profiles?.last_name || ''}`.trim() || 'Usuario'
+            const inicial  = name[0]?.toUpperCase() || '?'
 
             return (
               <div key={post.id} style={{ background: 'linear-gradient(135deg, rgba(26,46,66,0.75), rgba(20,34,51,0.7))', borderRadius: '20px', padding: '16px', border: '1px solid rgba(201,162,39,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.25)', backdropFilter: 'blur(8px)' }}>
@@ -199,7 +213,7 @@ export default function ComunidadPage() {
                     <p style={{ margin: 0, fontSize: '11px', color: 'var(--muted)' }}>{timeAgo(post.created_at)}</p>
                   </div>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)', color: 'var(--gold-light)', fontSize: '11px', fontWeight: '500', padding: '3px 10px', borderRadius: '9999px' }}>
-                    <TypeIcon size={11} /> {cfg?.label || 'Reflexión'}
+                    <TypeIcon size={11} /> {cfg.label}
                   </span>
                 </div>
 
@@ -219,11 +233,24 @@ export default function ComunidadPage() {
                   {post.content}
                 </p>
 
-                {/* Like */}
-                <button onClick={() => handleLike(post)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                  <Heart size={18} color={liked ? '#E8C55A' : 'rgba(245,240,232,0.35)'} fill={liked ? '#E8C55A' : 'none'} />
-                  <span style={{ fontSize: '13px', color: liked ? 'var(--gold-light)' : 'var(--muted)' }}>{post.post_likes?.length || 0}</span>
-                </button>
+                {/* Interacciones */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', borderTop: '1px solid rgba(245,240,232,0.06)', paddingTop: '10px' }}>
+                  {/* Like */}
+                  <button onClick={() => handleLike(post)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                    <Heart size={18} color={liked ? '#E8C55A' : 'rgba(245,240,232,0.35)'} fill={liked ? '#E8C55A' : 'none'} />
+                    <span style={{ fontSize: '12px', color: liked ? 'var(--gold-light)' : 'var(--muted)' }}>{post.post_likes?.length || 0}</span>
+                  </button>
+
+                  {/* Me uno en oración */}
+                  <button onClick={() => handlePray(post)} style={{
+                    display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  }}>
+                    <Flame size={18} color={prayed ? '#E8C55A' : 'rgba(245,240,232,0.35)'} fill={prayed ? '#E8C55A' : 'none'} />
+                    <span style={{ fontSize: '12px', color: prayed ? 'var(--gold-light)' : 'var(--muted)' }}>
+                      {prayed ? 'Rezando' : 'Me uno en oración'} ({post.post_prayers?.length || 0})
+                    </span>
+                  </button>
+                </div>
               </div>
             )
           })}
@@ -247,19 +274,19 @@ export default function ComunidadPage() {
             </div>
 
             {/* Tipo */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
               {(Object.entries(TYPE_CONFIG) as [Post['type'], typeof TYPE_CONFIG[Post['type']]][]).map(([key, cfg]) => {
                 const TIcon = cfg.Icon
                 return (
-                  <button key={key} onClick={() => setType(key)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', padding: '8px 4px', borderRadius: '12px', cursor: 'pointer', border: type === key ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(245,240,232,0.1)', background: type === key ? 'rgba(201,162,39,0.15)' : 'transparent', color: type === key ? 'var(--gold-light)' : 'var(--muted)', fontSize: '12px', fontWeight: '500' }}>
-                    <TIcon size={13} /> {cfg.label}
+                  <button key={key} onClick={() => setType(key)} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '8px 4px', borderRadius: '12px', cursor: 'pointer', border: type === key ? '1px solid rgba(201,162,39,0.4)' : '1px solid rgba(245,240,232,0.1)', background: type === key ? 'rgba(201,162,39,0.15)' : 'transparent', color: type === key ? 'var(--gold-light)' : 'var(--muted)', fontSize: '11px', fontWeight: '500' }}>
+                    <TIcon size={12} /> {cfg.label}
                   </button>
                 )
               })}
             </div>
 
             {/* Textarea */}
-            <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Escribe aquí..." rows={4}
+            <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="Escribe aquí tu intención o mensaje..." rows={4}
               style={{ width: '100%', boxSizing: 'border-box', background: 'rgba(26,46,66,0.6)', border: '1px solid rgba(201,162,39,0.2)', borderRadius: '14px', padding: '14px', color: 'var(--text)', fontSize: '15px', lineHeight: 1.7, fontFamily: "'Playfair Display', serif", resize: 'none', outline: 'none', marginBottom: '12px' }}
             />
 
