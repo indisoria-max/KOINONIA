@@ -31,9 +31,10 @@ export default function Map({ churches, onSelect }: MapProps) {
         zoomControl: false,
       })
 
+      // MapTiler Streets — estilo Google Maps
       L.tileLayer(
-        `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${process.env.NEXT_PUBLIC_STADIA_KEY}`,
-        { attribution: '© Stadia Maps © OpenStreetMap', maxZoom: 20 }
+        `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`,
+        { attribution: '© MapTiler © OpenStreetMap', maxZoom: 20, tileSize: 512, zoomOffset: -1 }
       ).addTo(map)
 
       L.control.zoom({ position: 'topright' }).addTo(map)
@@ -83,12 +84,12 @@ export default function Map({ churches, onSelect }: MapProps) {
 
       const icon = (L as any).divIcon({
         html: `<div style="
-          width: 12px; height: 12px;
+          width: 14px; height: 14px;
           background: #C9A227; border-radius: 50%;
-          border: 2px solid rgba(255,255,255,0.8);
-          box-shadow: 0 1px 6px rgba(0,0,0,0.6);
+          border: 2px solid white;
+          box-shadow: 0 1px 6px rgba(0,0,0,0.5);
         "></div>`,
-        className: '', iconSize: [12, 12], iconAnchor: [6, 6]
+        className: '', iconSize: [14, 14], iconAnchor: [7, 7]
       })
 
       churches.forEach(church => {
@@ -138,11 +139,10 @@ export default function Map({ churches, onSelect }: MapProps) {
       <button onClick={handleLocate} style={{
         position: 'absolute', bottom: '16px', right: '10px', zIndex: 1000,
         width: '42px', height: '42px', borderRadius: '10px',
-        background: 'rgba(20,30,48,0.92)',
-        border: '1px solid rgba(201,162,39,0.3)',
+        background: 'rgba(255,255,255,0.95)',
+        border: '1px solid rgba(0,0,0,0.1)',
         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
-        backdropFilter: 'blur(8px)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
       }}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A227" strokeWidth="2" strokeLinecap="round">
           <circle cx="12" cy="12" r="3" fill="#C9A227" fillOpacity="0.3"/>
