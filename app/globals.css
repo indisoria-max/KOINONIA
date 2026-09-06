@@ -54,3 +54,17 @@ a {
 /* Leaflet MarkerCluster */
 @import url('https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css');
 @import url('https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css');
+/* ── Modo Claro (sistema) ── */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #F5F0E8;
+    --surface: #FFFFFF;
+    --card: #FFFFFF;
+    --gold: #A67C15;
+    --gold-light: #C9A227;
+    --text: #0A1019;
+    --muted: rgba(10,16,25,0.45);
+    --border: rgba(166,124,21,0.3);
+    --border2: rgba(10,16,25,0.1);
+  }
+}

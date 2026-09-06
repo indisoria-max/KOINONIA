@@ -14,13 +14,27 @@ interface MapProps {
   onSelect: (church: Church) => void
 }
 
+const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY
+
 export default function Map({ churches, onSelect }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
   const clusterRef = useRef<any>(null)
+  const tileLayerRef = useRef<any>(null)
   const userMarkerRef = useRef<any>(null)
   const [mapReady, setMapReady] = useState(false)
+  const [isDark, setIsDark] = useState(true)
 
+  // Detectar modo claro/oscuro del sistema
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    setIsDark(mq.matches)
+    const handler = (e: MediaQueryListEvent) => setIsDark(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+
+  // Inicializar mapa
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return
 
@@ -31,11 +45,14 @@ export default function Map({ churches, onSelect }: MapProps) {
         zoomControl: false,
       })
 
-      // MapTiler Streets — estilo Google Maps
-      L.tileLayer(
-        `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`,
-        { attribution: '© MapTiler © OpenStreetMap', maxZoom: 20, tileSize: 512, zoomOffset: -1 }
-      ).addTo(map)
+      const url = isDark
+        ? `https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`
+        : `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`
+
+      tileLayerRef.current = L.tileLayer(url, {
+        attribution: '© MapTiler © OpenStreetMap',
+        maxZoom: 20, tileSize: 512, zoomOffset: -1
+      }).addTo(map)
 
       L.control.zoom({ position: 'topright' }).addTo(map)
 
@@ -48,16 +65,33 @@ export default function Map({ churches, onSelect }: MapProps) {
     }
   }, [])
 
+  // Cambiar tiles cuando cambia el modo
+  useEffect(() => {
+    if (!mapReady || !mapRef.current) return
+
+    import('leaflet').then(L => {
+      if (tileLayerRef.current) {
+        mapRef.current.removeLayer(tileLayerRef.current)
+      }
+
+      const url = isDark
+        ? `https://api.maptiler.com/maps/streets-v2-dark/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`
+        : `https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=${MAPTILER_KEY}`
+
+      tileLayerRef.current = L.tileLayer(url, {
+        attribution: '© MapTiler © OpenStreetMap',
+        maxZoom: 20, tileSize: 512, zoomOffset: -1
+      }).addTo(mapRef.current)
+    })
+  }, [isDark, mapReady])
+
+  // Añadir marcadores
   useEffect(() => {
     if (!mapReady || !mapRef.current || churches.length === 0) return
 
-    Promise.all([
-      import('leaflet'),
-      import('leaflet.markercluster')
-    ]).then(([L]) => {
+    Promise.all([import('leaflet'), import('leaflet.markercluster')]).then(([L]) => {
       const map = mapRef.current
       if (!map) return
-
       if (clusterRef.current) map.removeLayer(clusterRef.current)
 
       const cluster = (L as any).markerClusterGroup({
@@ -74,8 +108,8 @@ export default function Map({ churches, onSelect }: MapProps) {
               width: 38px; height: 38px;
               display: flex; align-items: center; justify-content: center;
               font-size: 12px; font-weight: 700;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-              border: 2px solid rgba(255,255,255,0.5);
+              box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+              border: 2px solid rgba(255,255,255,0.6);
             ">${count > 999 ? '999+' : count}</div>`,
             className: '', iconSize: [38, 38], iconAnchor: [19, 19]
           })
@@ -105,27 +139,17 @@ export default function Map({ churches, onSelect }: MapProps) {
 
   const handleLocate = () => {
     if (!mapRef.current || !navigator.geolocation) return
-    const map = mapRef.current
-
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         import('leaflet').then(L => {
           const { latitude: lat, longitude: lng } = pos.coords
-          map.flyTo([lat, lng], 15, { duration: 1.5 })
-
-          if (userMarkerRef.current) map.removeLayer(userMarkerRef.current)
-
+          mapRef.current.flyTo([lat, lng], 15, { duration: 1.5 })
+          if (userMarkerRef.current) mapRef.current.removeLayer(userMarkerRef.current)
           const userIcon = (L as any).divIcon({
-            html: `<div style="
-              width: 18px; height: 18px;
-              background: #3B82F6; border-radius: 50%;
-              border: 3px solid white;
-              box-shadow: 0 0 0 5px rgba(59,130,246,0.25), 0 2px 8px rgba(0,0,0,0.4);
-            "></div>`,
+            html: `<div style="width:18px;height:18px;background:#3B82F6;border-radius:50%;border:3px solid white;box-shadow:0 0 0 5px rgba(59,130,246,0.25)"></div>`,
             className: '', iconSize: [18, 18], iconAnchor: [9, 9]
           })
-
-          userMarkerRef.current = (L as any).marker([lat, lng], { icon: userIcon }).addTo(map)
+          userMarkerRef.current = (L as any).marker([lat, lng], { icon: userIcon }).addTo(mapRef.current)
         })
       },
       () => alert('Activa la ubicación en tu dispositivo')
@@ -135,14 +159,13 @@ export default function Map({ churches, onSelect }: MapProps) {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
-
       <button onClick={handleLocate} style={{
         position: 'absolute', bottom: '16px', right: '10px', zIndex: 1000,
         width: '42px', height: '42px', borderRadius: '10px',
-        background: 'rgba(255,255,255,0.95)',
-        border: '1px solid rgba(0,0,0,0.1)',
+        background: isDark ? 'rgba(20,30,48,0.92)' : 'rgba(255,255,255,0.95)',
+        border: isDark ? '1px solid rgba(201,162,39,0.3)' : '1px solid rgba(0,0,0,0.1)',
         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
       }}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A227" strokeWidth="2" strokeLinecap="round">
           <circle cx="12" cy="12" r="3" fill="#C9A227" fillOpacity="0.3"/>
