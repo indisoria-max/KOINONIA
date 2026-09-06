@@ -15,24 +15,33 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Formato de Biblia inválido' }, { status: 500 })
     }
 
-    // Los libros están en orden de 0 a 65
+    // Buscar el libro por índice (0-based) o por propiedad number
     const targetBook = bibleData[bookNum - 1] || bibleData.find((b: any) => b.number === bookNum)
+    
     if (!targetBook) {
       return NextResponse.json({ error: 'Libro no encontrado' }, { status: 404 })
     }
 
-    const versesArray = targetBook.chapters?.[chapterNum - 1]
+    // Los capítulos están en targetBook.chapters
+    const chapters = targetBook.chapters || targetBook.c
+    const versesArray = chapters?.[chapterNum - 1]
+
     if (!versesArray) {
       return NextResponse.json({ error: 'Capítulo no encontrado' }, { status: 404 })
     }
 
-    const verses = versesArray.map((text: string, index: number) => ({
-      verse: index + 1,
-      text: typeof text === 'string' ? text.trim() : (text as any)?.text || ''
-    }))
+    const verses = versesArray.map((verseItem: any, index: number) => {
+      if (typeof verseItem === 'string') {
+        return { verse: index + 1, text: verseItem.trim() }
+      }
+      return {
+        verse: verseItem.verse || index + 1,
+        text: (verseItem.text || verseItem.t || '').trim()
+      }
+    })
 
     return NextResponse.json({
-      book: targetBook.name,
+      book: targetBook.name || targetBook.n,
       chapter: chapterNum,
       verses
     })

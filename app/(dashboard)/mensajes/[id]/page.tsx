@@ -31,13 +31,21 @@ export default function ChatPage() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const supabase  = createClient()
 
-  async function fetchMessages() {
+  async function fetchMessages(currentUserId: string) {
     const { data } = await supabase
       .from('messages')
       .select('*')
       .eq('connection_id', id)
       .order('created_at', { ascending: true })
     if (data) setMessages(data)
+
+    // Marcar los mensajes recibidos como leídos
+    await supabase
+      .from('messages')
+      .update({ read: true })
+      .eq('connection_id', id)
+      .neq('sender_id', currentUserId)
+      .eq('read', false)
   }
 
   useEffect(() => {
@@ -65,7 +73,7 @@ export default function ChatPage() {
         setOther(otherProfile as Profile)
       }
 
-      await fetchMessages()
+      await fetchMessages(user.id)
       setLoading(false)
     }
 
