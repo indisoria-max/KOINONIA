@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Search, MapPin, User, MessageCircle, Navigation, Home } from 'lucide-react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { Search, MapPin, User, MessageCircle, Navigation, Home, Users } from 'lucide-react'
 
 type Profile = {
   id: string
@@ -17,33 +17,73 @@ type Profile = {
 }
 
 export default function BuscarPage() {
-  const [query, setQuery]       = useState('')
-  const [results, setResults]   = useState<Profile[]>([])
-  const [loading, setLoading]   = useState(false)
-  const [searched, setSearched] = useState(false)
+  const [query, setQuery]           = useState('')
+  const [results, setResults]       = useState<Profile[]>([])
+  const [loading, setLoading]       = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [connectingId, setConnectingId]   = useState<string | null>(null)
   const supabase = createClient()
+  const router   = useRouter()
 
   useEffect(() => {
-    // Búsqueda inicial de anfitriones destacados
-    searchHosts('')
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id)
+    })
+    searchPeople('')
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function searchHosts(city: string) {
+  async function searchPeople(text: string) {
     setLoading(true)
-    let q = supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'anfitrion')
+    let q = supabase.from('profiles').select('*')
 
-    if (city.trim()) {
-      q = q.ilike('city', `%${city.trim()}%`)
+    if (text.trim()) {
+      q = q.or(`city.ilike.%${text.trim()}%,first_name.ilike.%${text.trim()}%,last_name.ilike.%${text.trim()}%`)
     }
 
-    const { data } = await q.limit(20)
-    setResults(data || [])
+    const { data } = await q.limit(30)
+    // Filtrar al usuario actual para no auto-buscarse
+    const filtered = (data || []).filter(p => p.id !== currentUserId)
+    setResults(filtered)
     setLoading(false)
-    setSearched(true)
+  }
+
+  async function startChat(targetUserId: string) {
+    if (!currentUserId) {
+      router.push('/login')
+      return
+    }
+
+    setConnectingId(targetUserId)
+
+    // 1. Buscar si ya existe la conexión
+    const { data: existing } = await supabase
+      .from('connections')
+      .select('id')
+      .or(`and(pilgrim_id.eq.${currentUserId},host_id.eq.${targetUserId}),and(pilgrim_id.eq.${targetUserId},host_id.eq.${currentUserId})`)
+      .single()
+
+    if (existing) {
+      router.push(`/mensajes/${existing.id}`)
+      return
+    }
+
+    // 2. Si no existe, crear la conexión
+    const { data: newConn, error } = await supabase
+      .from('connections')
+      .insert({
+        pilgrim_id: currentUserId,
+        host_id: targetUserId
+      })
+      .select('id')
+      .single()
+
+    if (newConn) {
+      router.push(`/mensajes/${newConn.id}`)
+    } else if (error) {
+      alert('Error al iniciar la conversación: ' + error.message)
+    }
+    setConnectingId(null)
   }
 
   return (
@@ -68,7 +108,7 @@ export default function BuscarPage() {
           Red Koinonia
         </p>
         <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '28px', fontWeight: '700', color: 'var(--text)', margin: '0 0 20px' }}>
-          Buscar Anfitriones
+          Buscar en la comunidad
         </h1>
 
         {/* Buscador */}
@@ -79,9 +119,9 @@ export default function BuscarPage() {
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
-              searchHosts(e.target.value)
+              searchPeople(e.target.value)
             }}
-            placeholder="Buscar por ciudad (ej: Madrid, Santiago)..."
+            placeholder="Buscar por nombre o ciudad..."
             style={{
               width: '100%', boxSizing: 'border-box',
               background: 'rgba(26,46,66,0.75)',
@@ -102,18 +142,18 @@ export default function BuscarPage() {
 
         {loading && (
           <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--muted)' }}>
-            <p style={{ margin: 0, fontSize: '14px' }}>Buscando anfitriones...</p>
+            <p style={{ margin: 0, fontSize: '14px' }}>Buscando personas...</p>
           </div>
         )}
 
-        {!loading && searched && results.length === 0 && (
+        {!loading && results.length === 0 && (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <User size={36} color="rgba(201,162,39,0.3)" style={{ marginBottom: '14px' }} />
             <p style={{ fontFamily: "'Playfair Display', serif", fontSize: '18px', color: 'var(--text)', marginBottom: '6px' }}>
-              No encontramos anfitriones
+              No se encontraron personas
             </p>
             <p style={{ fontSize: '13px', color: 'var(--muted)', margin: 0 }}>
-              Prueba buscando otra ciudad cercana
+              Prueba buscando por nombre o por otra ciudad
             </p>
           </div>
         )}
@@ -121,8 +161,9 @@ export default function BuscarPage() {
         {!loading && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {results.map((profile) => {
-              const nombre  = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Anfitrión'
+              const nombre  = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Usuario'
               const inicial = nombre[0]?.toUpperCase() || '?'
+              const isConnecting = connectingId === profile.id
 
               return (
                 <div key={profile.id} style={{
@@ -153,7 +194,9 @@ export default function BuscarPage() {
                           {nombre}
                         </h3>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)', color: 'var(--gold-light)', fontSize: '10px', fontWeight: '500', padding: '3px 9px', borderRadius: '9999px' }}>
-                          <Home size={10} /> Anfitrión
+                          {profile.role === 'peregrino' && <><Navigation size={10} /> Peregrino</>}
+                          {profile.role === 'anfitrion' && <><Home size={10} /> Anfitrión</>}
+                          {profile.role === 'ambos' && <><Users size={10} /> Peregrino y Anfitrión</>}
                         </span>
                       </div>
 
@@ -178,17 +221,22 @@ export default function BuscarPage() {
                     </p>
                   )}
 
-                  {/* Botón mensaje */}
-                  <Link href={`/mensajes`} style={{ textDecoration: 'none', display: 'block' }}>
-                    <div style={{
+                  {/* Botón iniciar chat */}
+                  <button
+                    onClick={() => startChat(profile.id)}
+                    disabled={isConnecting}
+                    style={{
+                      width: '100%',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                       background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.28)',
                       borderRadius: '12px', padding: '10px',
                       color: 'var(--gold-light)', fontWeight: '600', fontSize: '13px',
-                    }}>
-                      <MessageCircle size={14} /> Contactar anfitrión
-                    </div>
-                  </Link>
+                      cursor: 'pointer', opacity: isConnecting ? 0.6 : 1
+                    }}
+                  >
+                    <MessageCircle size={14} />
+                    {isConnecting ? 'Abriendo chat...' : 'Enviar mensaje'}
+                  </button>
                 </div>
               )
             })}

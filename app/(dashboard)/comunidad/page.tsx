@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { Heart, Plus, X, ImageIcon, Video, Music, BookOpen, Star, Sparkles } from 'lucide-react'
+import { Heart, Plus, X, ImageIcon, Video, Music, BookOpen, Sparkles } from 'lucide-react'
 
 type Post = {
   id: string
@@ -105,12 +105,29 @@ export default function ComunidadPage() {
     setPosting(true)
     let mediaUrl = null
     if (mediaFile) mediaUrl = await uploadMedia(mediaFile)
-    await supabase.from('posts').insert({
-      user_id: userId, content: content.trim(), type,
-      media_url: mediaUrl, media_type: mediaUrl ? mediaType : null,
-    })
-    setContent(''); clearMedia(); setShowNew(false); setPosting(false)
-    loadPosts()
+
+    const payload: any = {
+      user_id: userId,
+      content: content.trim(),
+      type,
+    }
+
+    if (mediaUrl && mediaType) {
+      payload.media_url = mediaUrl
+      payload.media_type = mediaType
+    }
+
+    const { error } = await supabase.from('posts').insert(payload)
+
+    if (error) {
+      alert('Error al publicar: ' + error.message)
+    } else {
+      setContent('')
+      clearMedia()
+      setShowNew(false)
+      loadPosts()
+    }
+    setPosting(false)
   }
 
   return (
@@ -163,7 +180,7 @@ export default function ComunidadPage() {
           {posts.map(post => {
             const liked   = post.post_likes.some(l => l.user_id === userId)
             const cfg     = TYPE_CONFIG[post.type]
-            const TypeIcon = cfg.Icon
+            const TypeIcon = cfg?.Icon || BookOpen
             const name    = `${post.profiles?.first_name || ''} ${post.profiles?.last_name || ''}`.trim() || 'Usuario'
             const inicial = name[0]?.toUpperCase() || '?'
 
@@ -182,7 +199,7 @@ export default function ComunidadPage() {
                     <p style={{ margin: 0, fontSize: '11px', color: 'var(--muted)' }}>{timeAgo(post.created_at)}</p>
                   </div>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(201,162,39,0.12)', border: '1px solid rgba(201,162,39,0.25)', color: 'var(--gold-light)', fontSize: '11px', fontWeight: '500', padding: '3px 10px', borderRadius: '9999px' }}>
-                    <TypeIcon size={11} /> {cfg.label}
+                    <TypeIcon size={11} /> {cfg?.label || 'Reflexión'}
                   </span>
                 </div>
 
@@ -205,7 +222,7 @@ export default function ComunidadPage() {
                 {/* Like */}
                 <button onClick={() => handleLike(post)} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
                   <Heart size={18} color={liked ? '#E8C55A' : 'rgba(245,240,232,0.35)'} fill={liked ? '#E8C55A' : 'none'} />
-                  <span style={{ fontSize: '13px', color: liked ? 'var(--gold-light)' : 'var(--muted)' }}>{post.post_likes.length}</span>
+                  <span style={{ fontSize: '13px', color: liked ? 'var(--gold-light)' : 'var(--muted)' }}>{post.post_likes?.length || 0}</span>
                 </button>
               </div>
             )
