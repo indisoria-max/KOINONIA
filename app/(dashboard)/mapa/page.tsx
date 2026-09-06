@@ -15,8 +15,7 @@ type Church = {
   has_adoration: boolean; has_confessions: boolean
 }
 
-type Schedule = { id: string; day_of_week: number; time: string; language: string; notes: string }
-
+type Schedule = { id: string; day_of_week: number; time: string; language: string; notes: string; season: string }
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
 export default function MapaPage() {
@@ -100,12 +99,17 @@ export default function MapaPage() {
     window.open(urls[app], '_blank')
   }
 
-  const groupedSchedules = schedules.reduce((acc, s) => {
-    const day = DAYS[s.day_of_week]
-    if (!acc[day]) acc[day] = []
-    acc[day].push(s.time.slice(0, 5))
-    return acc
-  }, {} as Record<string, string[]>)
+  const SEASON_LABELS: Record<string, string> = {
+  'todo_el_año': 'Todo el año', 'verano': 'Verano', 'invierno': 'Invierno'
+}
+const groupedBySeasonDay = schedules.reduce((acc, s) => {
+  const season = s.season || 'todo_el_año'
+  if (!acc[season]) acc[season] = {}
+  const day = DAYS[s.day_of_week]
+  if (!acc[season][day]) acc[season][day] = []
+  acc[season][day].push(s.time.slice(0, 5))
+  return acc
+}, {} as Record<string, Record<string, string[]>>)
 
   return (
     <>
@@ -201,21 +205,27 @@ export default function MapaPage() {
                 )}
 
                 {/* Horarios */}
-                {Object.keys(groupedSchedules).length > 0 && (
-                  <div style={{ marginBottom: '14px' }}>
-                    <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--muted)', marginBottom: '8px', letterSpacing: '0.1em' }}>HORARIOS DE MISA</p>
-                    {Object.entries(groupedSchedules).map(([day, times]) => (
-                      <div key={day} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', width: '28px' }}>{day}</span>
-                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                          {times.map((t, i) => (
-                            <span key={i} style={{ background: 'rgba(201,162,39,0.12)', color: 'var(--gold)', fontSize: '11px', padding: '2px 8px', borderRadius: '9999px' }}>{t}</span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                {Object.keys(groupedBySeasonDay).length > 0 && (
+  <div style={{ marginBottom: '14px' }}>
+    {Object.entries(groupedBySeasonDay).map(([season, days]) => (
+      <div key={season} style={{ marginBottom: '12px' }}>
+        <p style={{ fontSize: '11px', fontWeight: 600, color: 'var(--muted)', marginBottom: '8px', letterSpacing: '0.1em' }}>
+          HORARIOS · {SEASON_LABELS[season]?.toUpperCase() || season.toUpperCase()}
+        </p>
+        {Object.entries(days).map(([day, times]) => (
+          <div key={day} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', width: '28px' }}>{day}</span>
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+              {times.map((t, i) => (
+                <span key={i} style={{ background: 'rgba(201,162,39,0.12)', color: 'var(--gold)', fontSize: '11px', padding: '2px 8px', borderRadius: '9999px' }}>{t}</span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    ))}
+  </div>
+)}
 
                 {/* Botón Añadir información */}
                 <button onClick={() => setShowEdit(true)} style={{
