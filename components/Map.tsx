@@ -21,7 +21,6 @@ export default function Map({ churches, onSelect }: MapProps) {
   const userMarkerRef = useRef<any>(null)
   const [mapReady, setMapReady] = useState(false)
 
-  // Inicializar mapa
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return
 
@@ -32,14 +31,18 @@ export default function Map({ churches, onSelect }: MapProps) {
         zoomControl: false,
       })
 
-      // Tiles modernos oscuros (CartoDB Dark Matter)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap © CARTO',
-        maxZoom: 19,
-        subdomains: 'abcd',
-      }).addTo(map)
+      // Base oscura ESRI — gratis, sin API key
+      L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        { attribution: '© Esri © OpenStreetMap', maxZoom: 16 }
+      ).addTo(map)
 
-      // Controles de zoom arriba a la derecha
+      // Etiquetas de calles y ciudades
+      L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 16 }
+      ).addTo(map)
+
       L.control.zoom({ position: 'topright' }).addTo(map)
 
       mapRef.current = map
@@ -51,7 +54,6 @@ export default function Map({ churches, onSelect }: MapProps) {
     }
   }, [])
 
-  // Añadir marcadores cuando el mapa Y las iglesias estén listos
   useEffect(() => {
     if (!mapReady || !mapRef.current || churches.length === 0) return
 
@@ -107,7 +109,6 @@ export default function Map({ churches, onSelect }: MapProps) {
     })
   }, [churches, mapReady])
 
-  // Ir a mi ubicación
   const handleLocate = () => {
     if (!mapRef.current || !navigator.geolocation) return
     const map = mapRef.current
@@ -141,19 +142,15 @@ export default function Map({ churches, onSelect }: MapProps) {
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
-      {/* Botón ubicación */}
-      <button
-        onClick={handleLocate}
-        style={{
-          position: 'absolute', bottom: '16px', right: '10px', zIndex: 1000,
-          width: '42px', height: '42px', borderRadius: '10px',
-          background: 'rgba(12,20,35,0.92)',
-          border: '1px solid rgba(201,162,39,0.3)',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
-          backdropFilter: 'blur(8px)',
-        }}
-      >
+      <button onClick={handleLocate} style={{
+        position: 'absolute', bottom: '16px', right: '10px', zIndex: 1000,
+        width: '42px', height: '42px', borderRadius: '10px',
+        background: 'rgba(12,20,35,0.92)',
+        border: '1px solid rgba(201,162,39,0.3)',
+        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+        backdropFilter: 'blur(8px)',
+      }}>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9A227" strokeWidth="2" strokeLinecap="round">
           <circle cx="12" cy="12" r="3" fill="#C9A227" fillOpacity="0.3"/>
           <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
