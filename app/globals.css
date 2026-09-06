@@ -51,3 +51,6 @@ a {
 @media (max-width: 1023px) {
   .auth-left-panel { display: none !important; }
 }
+/* Leaflet MarkerCluster */
+@import url('https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css');
+@import url('https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css');

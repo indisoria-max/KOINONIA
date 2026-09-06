@@ -1,8 +1,6 @@
 const https = require('https')
-const http = require('http')
-
-const SUPABASE_URL = 'https://rrtrrstavukdytulymjd.supabase.co'
-const ANON_KEY = 'sb_publishable_Xdg-b8bSYoxJRfj-7wyDbA_i64-Xw3t'
+const fs = require('fs')
+const path = require('path')
 
 const QUERY = `[out:json][timeout:300];
 (
@@ -15,7 +13,6 @@ const MIRRORS = [
   'https://overpass-api.de/api/interpreter',
   'https://lz4.overpass-api.de/api/interpreter',
   'https://overpass.openstreetmap.fr/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
 ]
 
@@ -53,34 +50,10 @@ function postRequest(urlStr, body) {
   })
 }
 
-async function supabaseInsert(batch) {
-  return new Promise((resolve, reject) => {
-    const body = JSON.stringify(batch)
-    const url = new URL(`${SUPABASE_URL}/rest/v1/churches`)
-    const options = {
-      hostname: url.hostname,
-      path: url.pathname,
-      method: 'POST',
-      headers: {
-        'apikey': ANON_KEY,
-        'Authorization': `Bearer ${ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(body),
-        'Prefer': 'return=minimal'
-      }
-    }
-    const req = https.request(options, res => {
-      let raw = ''
-      res.on('data', c => raw += c)
-      res.on('end', () => {
-        if (res.statusCode >= 400) console.error('\n⚠️', raw.slice(0, 150))
-        resolve()
-      })
-    })
-    req.on('error', reject)
-    req.write(body)
-    req.end()
-  })
+function escapeCsv(val) {
+  if (val === null || val === undefined) return ''
+  const s = String(val).replace(/"/g, '""')
+  return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s
 }
 
 async function main() {
@@ -96,7 +69,7 @@ async function main() {
     }
   }
 
-  if (!data) throw new Error('Todos los servidores fallaron. Intenta en 10 minutos.')
+  if (!data) throw new Error('Todos los servidores fallaron.')
 
   const elements = data.elements || []
   console.log(`\n📍 ${elements.length} iglesias encontradas`)
@@ -112,25 +85,27 @@ async function main() {
       city: t['addr:city'] || t['addr:municipality'] || t['addr:town'] || t['addr:village'] || '',
       latitude: lat,
       longitude: lon,
-      phone: t.phone || t['contact:phone'] || null,
-      website: t.website || t['contact:website'] || t['contact:url'] || null,
+      phone: t.phone || t['contact:phone'] || '',
+      website: t.website || t['contact:website'] || t['contact:url'] || '',
       has_adoration: false,
       has_confessions: false
     }
   }).filter(Boolean)
 
   console.log(`✅ ${churches.length} iglesias con nombre y coordenadas`)
-  console.log('⬆️  Subiendo a Supabase...\n')
 
-  const BATCH = 100
-  let done = 0
-  for (let i = 0; i < churches.length; i += BATCH) {
-    await supabaseInsert(churches.slice(i, i + BATCH))
-    done += Math.min(BATCH, churches.length - i)
-    process.stdout.write(`\r   ${done}/${churches.length} iglesias subidas...`)
-  }
+  // Generar CSV
+  const header = 'name,address,city,latitude,longitude,phone,website,has_adoration,has_confessions'
+  const rows = churches.map(c =>
+    [c.name, c.address, c.city, c.latitude, c.longitude, c.phone, c.website, c.has_adoration, c.has_confessions]
+      .map(escapeCsv).join(',')
+  )
+  const csv = [header, ...rows].join('\n')
 
-  console.log(`\n\n✅ ¡Completado! ${done} iglesias en el mapa 🗺️`)
+  const outPath = path.join(__dirname, '..', 'churches-spain.csv')
+  fs.writeFileSync(outPath, csv, 'utf-8')
+  console.log(`\n✅ Archivo generado: churches-spain.csv (${churches.length} iglesias)`)
+  console.log('📋 Ahora importa este CSV en Supabase → Table Editor → churches → Import Data')
 }
 
 main().catch(err => { console.error('❌', err.message); process.exit(1) })
