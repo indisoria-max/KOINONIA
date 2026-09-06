@@ -1,18 +1,68 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { Home, Users, Map, Handshake, CircleUser } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import { Home, Users, Map, MessageSquare, CircleUser } from 'lucide-react'
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const [profile, setProfile]     = useState<{ first_name?: string; avatar_url?: string } | null>(null)
+  const [unreadMsg, setUnreadMsg] = useState(false)
+  const pathname                  = usePathname()
+  const supabase                  = createClient()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('first_name, avatar_url')
-    .eq('id', user.id)
-    .single()
+  useEffect(() => {
+    async function loadUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('first_name, avatar_url')
+        .eq('id', user.id)
+        .single()
+      
+      setProfile(data)
+
+      // Comprobar mensajes no leídos dirigidos al usuario
+      const { data: connIds } = await supabase
+        .from('connections')
+        .select('id')
+        .or(`pilgrim_id.eq.${user.id},host_id.eq.${user.id}`)
+
+      if (connIds && connIds.length > 0) {
+        const ids = connIds.map(c => c.id)
+        const { count } = await supabase
+          .from('messages')
+          .select('id', { count: 'exact', head: true })
+          .in('connection_id', ids)
+          .neq('sender_id', user.id)
+          .eq('read', false)
+
+        setUnreadMsg((count || 0) > 0)
+      }
+
+      // Suscripción Realtime a nuevos mensajes
+      const channel = supabase
+        .channel('nav-messages')
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        }, (payload) => {
+          if (payload.new.sender_id !== user.id) {
+            setUnreadMsg(true)
+          }
+        })
+        .subscribe()
+
+      return () => { supabase.removeChannel(channel) }
+    }
+
+    loadUser()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   const inicial = profile?.first_name?.[0]?.toUpperCase() || '?'
 
@@ -69,22 +119,39 @@ export default async function DashboardLayout({ children }: { children: React.Re
         zIndex: 10, padding: '6px 0 8px'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-          <NavItem href="/dashboard"  icon={<Home size={22} />}       label="Inicio"    />
-          <NavItem href="/comunidad"  icon={<Users size={22} />}      label="Comunidad" />
-          <NavItem href="/mapa"       icon={<Map size={22} />}        label="Mapa"      />
-          <NavItem href="/partners"   icon={<Handshake size={22} />}  label="Partners"  />
-          <NavItem href="/perfil"     icon={<CircleUser size={22} />} label="Perfil"    />
+          <NavItem href="/dashboard"  icon={<Home size={22} />}          label="Inicio"    active={pathname === '/dashboard'} />
+          <NavItem href="/comunidad"  icon={<Users size={22} />}         label="Comunidad" active={pathname === '/comunidad'} />
+          <NavItem href="/mapa"       icon={<Map size={22} />}           label="Mapa"      active={pathname === '/mapa'} />
+          <NavItem href="/mensajes"   icon={<MessageSquare size={22} />} label="Mensajes"  active={pathname.startsWith('/mensajes')} badge={unreadMsg} />
+          <NavItem href="/perfil"     icon={<CircleUser size={22} />}    label="Perfil"    active={pathname === '/perfil'} />
         </div>
       </nav>
     </div>
   )
 }
 
-function NavItem({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) {
+function NavItem({ href, icon, label, active, badge }: { href: string; icon: React.ReactNode; label: string; active: boolean; badge?: boolean }) {
   return (
-    <Link href={href} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', padding: '4px 12px', color: 'var(--muted)' }}>
-      {icon}
-      <span style={{ fontSize: '9px', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{label}</span>
+    <Link href={href} style={{
+      textDecoration: 'none',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px',
+      padding: '4px 12px',
+      color: active ? 'var(--gold)' : 'var(--muted)',
+      position: 'relative'
+    }}>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        {icon}
+        {badge && (
+          <span style={{
+            position: 'absolute', top: '-2px', right: '-4px',
+            width: '8px', height: '8px', borderRadius: '50%',
+            backgroundColor: '#EF4444',
+            border: '2px solid #0A1019',
+            boxShadow: '0 0 8px #EF4444'
+          }} />
+        )}
+      </div>
+      <span style={{ fontSize: '9px', fontWeight: active ? 700 : 500, letterSpacing: '0.5px', textTransform: 'uppercase' }}>{label}</span>
     </Link>
   )
 }

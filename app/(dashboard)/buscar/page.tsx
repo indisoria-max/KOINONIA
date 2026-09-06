@@ -17,9 +17,9 @@ type Profile = {
 }
 
 export default function BuscarPage() {
-  const [query, setQuery]           = useState('')
-  const [results, setResults]       = useState<Profile[]>([])
-  const [loading, setLoading]       = useState(false)
+  const [query, setQuery]                 = useState('')
+  const [results, setResults]             = useState<Profile[]>([])
+  const [loading, setLoading]             = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [connectingId, setConnectingId]   = useState<string | null>(null)
   const supabase = createClient()
@@ -27,24 +27,31 @@ export default function BuscarPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setCurrentUserId(user.id)
+      if (user) {
+        setCurrentUserId(user.id)
+        searchPeople('', user.id)
+      } else {
+        searchPeople('', null)
+      }
     })
-    searchPeople('')
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function searchPeople(text: string) {
+  async function searchPeople(text: string, userId: string | null) {
     setLoading(true)
     let q = supabase.from('profiles').select('*')
+
+    // Excluir al usuario conectado
+    if (userId) {
+      q = q.neq('id', userId)
+    }
 
     if (text.trim()) {
       q = q.or(`city.ilike.%${text.trim()}%,first_name.ilike.%${text.trim()}%,last_name.ilike.%${text.trim()}%`)
     }
 
     const { data } = await q.limit(30)
-    // Filtrar al usuario actual para no auto-buscarse
-    const filtered = (data || []).filter(p => p.id !== currentUserId)
-    setResults(filtered)
+    setResults(data || [])
     setLoading(false)
   }
 
@@ -119,7 +126,7 @@ export default function BuscarPage() {
             value={query}
             onChange={(e) => {
               setQuery(e.target.value)
-              searchPeople(e.target.value)
+              searchPeople(e.target.value, currentUserId)
             }}
             placeholder="Buscar por nombre o ciudad..."
             style={{
