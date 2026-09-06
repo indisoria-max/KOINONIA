@@ -4,8 +4,8 @@ import { join } from 'path'
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
-  const bookNum = parseInt(searchParams.get('book') || '1')
-  const chapterNum = parseInt(searchParams.get('chapter') || '1')
+  const book = parseInt(searchParams.get('book') || '1')
+  const chapter = parseInt(searchParams.get('chapter') || '1')
 
   try {
     const filePath = join(process.cwd(), 'public', 'bible-es.json')
@@ -15,36 +15,24 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: 'Formato de Biblia inválido' }, { status: 500 })
     }
 
-    // Buscar el libro por índice (0-based) o por propiedad number
-    const targetBook = bibleData[bookNum - 1] || bibleData.find((b: any) => b.number === bookNum)
-    
+    const bookIndex = book - 1
+    const targetBook = bibleData[bookIndex]
+
     if (!targetBook) {
       return NextResponse.json({ error: 'Libro no encontrado' }, { status: 404 })
     }
 
-    // Los capítulos están en targetBook.chapters
-    const chapters = targetBook.chapters || targetBook.c
-    const versesArray = chapters?.[chapterNum - 1]
-
+    const versesArray = targetBook.chapters?.[chapter - 1]
     if (!versesArray) {
       return NextResponse.json({ error: 'Capítulo no encontrado' }, { status: 404 })
     }
 
-    const verses = versesArray.map((verseItem: any, index: number) => {
-      if (typeof verseItem === 'string') {
-        return { verse: index + 1, text: verseItem.trim() }
-      }
-      return {
-        verse: verseItem.verse || index + 1,
-        text: (verseItem.text || verseItem.t || '').trim()
-      }
-    })
+    const verses = versesArray.map((text: string, index: number) => ({
+      verse: index + 1,
+      text: text?.trim() || ''
+    }))
 
-    return NextResponse.json({
-      book: targetBook.name || targetBook.n,
-      chapter: chapterNum,
-      verses
-    })
+    return NextResponse.json({ book: targetBook.name, chapter, verses })
   } catch (e) {
     return NextResponse.json({ error: 'Error interno', detail: String(e) }, { status: 500 })
   }
